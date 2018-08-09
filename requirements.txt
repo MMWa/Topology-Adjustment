@@ -1,0 +1,4 @@
+numba
+tqdm
+pygame
+numpy
