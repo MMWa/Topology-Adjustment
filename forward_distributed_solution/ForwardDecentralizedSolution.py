@@ -28,14 +28,14 @@ class ForwardPursueNode(Node):
         else:
             super().__init__()
 
-        self.proof = GreedyCentralSolution(self.unit_distance*.8)
+        self.proof = GreedyCentralSolution(self.unit_distance * .8)
 
-
+    @property
     def environment(self):
         accumulator = []
         for x in self.__a + self.__global_relay_link:
             if not self.ID == x.ID:
-                if self.distance_to(x) < self.unit_distance*1.2:
+                if self.distance_to(x) < self.unit_distance * 1.2:
                     accumulator.append(x)
 
         return accumulator
@@ -43,22 +43,20 @@ class ForwardPursueNode(Node):
     def follow(self):
         if self.type is NodeType.Relay:
             # a propegated velocity is used to move everything around
-            self.proof.node_list = self.environment()
+            self.proof.node_list = self.environment
 
-            self.move_along_line(self.angle_to(self.pursue_target), (self.distance_to(self.pursue_target) - self.unit_distance) * .2)
+            self.move_along_line(self.angle_to(self.pursue_target),
+                                 (self.distance_to(self.pursue_target) - self.unit_distance) * .2)
 
             try:
                 self.proof.execute_pipeline()
-                self.move_along_line(self.angle_to(self.proof.relay_list[0]), self.distance_to(self.proof.relay_list[0])*.6)
+                self.move_along_line(self.angle_to(self.proof.relay_list[0]), self.distance_to(self.proof.relay_list[0]) * .6)
                 self.proof.reset()
             except:
                 try:
                     self.__global_relay_link.remove(self)
                 except:
                     pass
-
-
-            #self.move_along_sin_rule(self.pursue_target.position.last_velocity,0,0)
 
         elif self.type is NodeType.Home:
             if self.distance_to(self.pursue_target) > self.unit_distance * .8:
@@ -72,13 +70,12 @@ class ForwardPursueNode(Node):
                 self.__global_relay_link.append(new_node)
 
             # if in call-back range
-            if self.distance_to(self.pursue_target) < self.unit_distance * .4:
+            if self.distance_to(self.pursue_target) < self.unit_distance * .1:
                 current_target = self.pursue_target
                 self.pursue_target = current_target.pursue_target
                 try:
                     self.__global_relay_link.remove(current_target)
                     print("triggered from the bottom")
-
                 except:
                     print("form the bottom")
 
@@ -113,9 +110,8 @@ class ForwardDecentralizedSolution(NodeNetwork):
     def sandbox(self):
         return [self.node_list, self.relay_list]
 
+
 if __name__ == "__main__":
-
-
     # create a list of nodes, this is our scenario
     node_list = []
 
@@ -144,5 +140,3 @@ if __name__ == "__main__":
     # print(test_dist.home_node.distance_to(b_node))
 
     # new set of test for inheratance
-
-
