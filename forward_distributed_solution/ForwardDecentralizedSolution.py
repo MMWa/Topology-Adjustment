@@ -28,7 +28,7 @@ class ForwardPursueNode(Node):
         else:
             super().__init__()
 
-        self.proof = GreedyCentralSolution(self.unit_distance)
+        self.proof = GreedyCentralSolution(self.unit_distance*.8)
 
 
     def environment(self):
@@ -41,33 +41,27 @@ class ForwardPursueNode(Node):
         return accumulator
 
     def follow(self):
-
-        # if self.type is NodeType.Home:
-        #     print(" this is Home")
-        #     print(self.position.as_array)
-        #     print(self.distance_to(self.pursue_target))
-
         if self.type is NodeType.Relay:
             # a propegated velocity is used to move everything around
-            """I should try to mimic the pursued velocity, accompanied with some discount factor"""
-
             self.proof.node_list = self.environment()
 
-            self.move_along_line(self.angle_to(self.pursue_target),
-                                 (self.distance_to(self.pursue_target) - self.unit_distance*.95) * .2)
+            self.move_along_line(self.angle_to(self.pursue_target), (self.distance_to(self.pursue_target) - self.unit_distance) * .2)
 
             try:
                 self.proof.execute_pipeline()
-                self.move_along_line(self.angle_to(self.proof.relay_list[0]), self.distance_to(self.proof.relay_list[0])*.1)
+                self.move_along_line(self.angle_to(self.proof.relay_list[0]), self.distance_to(self.proof.relay_list[0])*.6)
                 self.proof.reset()
             except:
-                pass
+                try:
+                    self.__global_relay_link.remove(self)
+                except:
+                    pass
 
 
             #self.move_along_sin_rule(self.pursue_target.position.last_velocity,0,0)
 
         elif self.type is NodeType.Home:
-            if self.distance_to(self.pursue_target) > self.unit_distance * .81:
+            if self.distance_to(self.pursue_target) > self.unit_distance * .8:
                 new_node = ForwardPursueNode([self.__a, self.__global_relay_link], self.unit_distance, in_node=Node(Pos(0, 0)))
 
                 new_node.type = NodeType.Relay
@@ -81,7 +75,12 @@ class ForwardPursueNode(Node):
             if self.distance_to(self.pursue_target) < self.unit_distance * .4:
                 current_target = self.pursue_target
                 self.pursue_target = current_target.pursue_target
-                self.__global_relay_link.remove(current_target)
+                try:
+                    self.__global_relay_link.remove(current_target)
+                    print("triggered from the bottom")
+
+                except:
+                    print("form the bottom")
 
 
 class ForwardDecentralizedSolution(NodeNetwork):
@@ -96,6 +95,7 @@ class ForwardDecentralizedSolution(NodeNetwork):
 
         super().__init__()
 
+        # a little trick to get the start node in the iteration without having to do alot of array copy..
         if full_list is not None:
             self.node_list = full_list
             self.home_node = full_list[0]

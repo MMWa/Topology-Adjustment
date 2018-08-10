@@ -20,7 +20,6 @@ class Segment:
         return [self.pointA, self.pointB]
 
     def distance_to(self, node: Node):
-
         disA = self.pointA.distance_to(node)
         disB = self.pointA.distance_to(self.pointB)
         disC = self.pointB.distance_to(node)

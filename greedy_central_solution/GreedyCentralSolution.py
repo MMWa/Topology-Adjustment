@@ -1,3 +1,4 @@
+import math
 import time
 
 from numba import *
@@ -115,27 +116,24 @@ class GreedyCentralSolution(NodeNetwork):
     @jit
     def __move_along_line(m, s, x, y):
 
-        g = np.tan(m)
-        """"
-        keep as static to allow for vectorization using jit
-        this really improves performance and gives much more consistent execution time
-        """
-        g_factor = np.square(g)
-        g_factor = np.add(1, g_factor)
-        g_factor = np.sqrt(g_factor)
+        g = math.tan(m)
 
-        x_o = np.divide(1, g_factor)
-        x_o = np.multiply(s, x_o)
+        g_factor = g ** 2
+        g_factor = 1 + g_factor
+        g_factor = math.sqrt(g_factor)
 
-        y_o = np.divide(g, g_factor)
-        y_o = np.multiply(s, y_o)
+        x_o = 1/g_factor
+        x_o = s * x_o
+
+        y_o = g/g_factor
+        y_o = s * y_o
 
         if m > np.pi / 2 or m < - np.pi / 2:
-            x_o = np.subtract(x, x_o)
-            y_o = np.subtract(y, y_o)
+            x_o = x - x_o
+            y_o = y - y_o
         else:
-            x_o = np.add(x, x_o)
-            y_o = np.add(y, y_o)
+            x_o = x + x_o
+            y_o = y + y_o
         return x_o, y_o
 
     def execute_pipeline(self):
