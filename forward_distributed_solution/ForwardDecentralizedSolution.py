@@ -1,5 +1,4 @@
 from typing import List
-
 from simulation.node import NodeNetwork, Node, Pos
 from simulation.node.Node import NodeType
 
@@ -9,7 +8,7 @@ class ForwardPursueNode(Node):
 
     def __init__(self, environment, unit_distance, position=None, in_node=None, pursue_target=None):
 
-        if in_node is not None:
+        if type(in_node) is type(Node):
             self = in_node
 
 
@@ -29,7 +28,7 @@ class ForwardPursueNode(Node):
 
     @property
     def environment(self):
-        # TODO: might depracate due to lack of use
+        # TODO: might deprecate due to lack of use
         accumulator = []
         for x in self.__a + self.__global_relay_link:
             print(self.distance_to(x))
@@ -41,32 +40,36 @@ class ForwardPursueNode(Node):
 
     def follow(self):
 
+        # if self.type is NodeType.Home:
+        #     print(" this is Home")
+        #     print(self.position.as_array)
+        #     print(self.distance_to(self.pursue_target))
+
         if self.type is NodeType.Relay:
             # a propegated velocity is used to move everything around
+            """I should try to mimic the pursued velocity, accompanied with some discount factor"""
+
             self.move_along_line(self.angle_to(self.pursue_target),
-                                 (self.distance_to(self.pursue_target) - self.unit_distance) * .5)
+                                 (self.distance_to(self.pursue_target) - self.unit_distance) * .8)
+
+            #self.move_along_sin_rule(self.pursue_target.position.last_velocity,0,0)
 
         elif self.type is NodeType.Home:
             if self.distance_to(self.pursue_target) > self.unit_distance * .81:
-                new_node = ForwardPursueNode([self.__a, self.__global_relay_link], self.unit_distance,
-                                             in_node=Node(Pos(0, 0)))
+                new_node = ForwardPursueNode([self.__a, self.__global_relay_link], self.unit_distance, in_node=Node(Pos(0, 0)))
 
                 new_node.type = NodeType.Relay
-                new_node.move_along_line(new_node.angle_to(self.pursue_target),
-                                         self.distance_to(self.pursue_target) * .8)
+                new_node.move_along_line(new_node.angle_to(self.pursue_target), self.distance_to(self.pursue_target) * .8)
 
                 new_node.pursue_target = self.pursue_target
                 self.pursue_target = new_node
                 self.__global_relay_link.append(new_node)
 
-                print(self.distance_to(self.pursue_target))
-
-                if self.distance_to(self.pursue_target) < self.unit_distance * .3:
-                    print("we got a hit")
-                    current_target = self.pursue_target
-                    self.pursue_target = current_target.pursue_target
-
-                    self.__global_relay_link.remove(current_target)
+            # if in call-back range
+            if self.distance_to(self.pursue_target) < self.unit_distance * .3:
+                current_target = self.pursue_target
+                self.pursue_target = current_target.pursue_target
+                self.__global_relay_link.remove(current_target)
 
 
 class ForwardDecentralizedSolution(NodeNetwork):
@@ -98,8 +101,9 @@ class ForwardDecentralizedSolution(NodeNetwork):
     def sandbox(self):
         return [self.node_list, self.relay_list]
 
-
 if __name__ == "__main__":
+
+
     # create a list of nodes, this is our scenario
     node_list = []
 

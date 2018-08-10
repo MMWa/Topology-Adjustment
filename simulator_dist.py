@@ -1,14 +1,13 @@
 import time
-from random import randint
+from pygame.constants import *
 
 from forward_distributed_solution.ForwardDecentralizedSolution import ForwardDecentralizedSolution
-from exhaustive_central_solution.ExhaustiveCentralSolution import ExhaustiveCentralSolution
-from greedy_central_solution.GreedyCentralSolution import GreedyCentralSolution
+from greedy_central_solution import GreedyCentralSolution
 from fui import WindowManager
-from pursue_central_solution.PursueCentralSolution import PursueCentralSolution
 from simulation.node import Node, Pos
 
 if __name__ == "__main__":
+    node_selector = 1
 
     move_coefficient = 10
 
@@ -28,7 +27,9 @@ if __name__ == "__main__":
 
     game_window = WindowManager()
 
+
     while True:
+
         # execute the scenario solver
         deltaT = time.time()
         dist_list.execute_pipeline()
@@ -39,14 +40,15 @@ if __name__ == "__main__":
         for x in node_list:
             game_window.nodes.append(x.position.as_int_array)
 
-        # print(dist_list.relay_list)
-
         game_window.greedy_relays = []
         for x in dist_list.relay_list[1:]:
             game_window.greedy_relays.append(x.position.as_int_array)
 
         for x in greedy_list.relay_list:
             game_window.pursue_relays.append(x.position.as_int_array)
+
+        game_window.selection = node_list[node_selector].position.as_int_array
+
 
         # call the tick/draw function
         game_window.tick(deltaT)
@@ -56,31 +58,24 @@ if __name__ == "__main__":
 
         event = game_window.catch_events()
 
-        # print(event)
-
-        if event == 119:
-            # w
-            node_list[1].position.velocity_add([0, move_coefficient])
-
-        if event == 115:
-            # s
-            node_list[1].position.velocity_add([0, -move_coefficient])
-
-
-        if event == 97:
-            # a
-            node_list[1].position.velocity_add([-move_coefficient, 0])
-
-
-        if event == 100:
-            # d
-            node_list[1].position.velocity_add([move_coefficient, 0])
-
+        if event == K_w:
+            node_list[node_selector].position.velocity_add([0, move_coefficient])
+        if event == K_s:
+            node_list[node_selector].position.velocity_add([0, -move_coefficient])
+        if event == K_a:
+            node_list[node_selector].position.velocity_add([-move_coefficient, 0])
+        if event == K_d:
+            node_list[node_selector].position.velocity_add([move_coefficient, 0])
         if event == 92:
             print("Attempt to trigger Debugger")
 
+        if event == K_o:
+            node_list.append(Node(Pos(0, 0)))
+
+        if event == K_p:
+            node_selector += 1
+            if node_selector == len(node_list):
+                node_selector = 1
+
 
         #node_list[1].position.velocity_add([randint(0, 2), randint(0, 2)])
-
-        # reset the solution state
-        # dist_list.reset()

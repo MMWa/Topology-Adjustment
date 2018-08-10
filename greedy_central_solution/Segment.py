@@ -89,7 +89,7 @@ class Segment:
             return ret_segment
         else:
             # standard routing
-            new_node = self.pointB
+            new_node = self.pointA
             # insures we do segment linking instead of pointless linking
             # forces conformity to the gained asset concept
             if not new_node.isHidden:

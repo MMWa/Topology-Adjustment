@@ -81,16 +81,20 @@ class Node:
         interm = np.subtract(target.position.as_array, self.position.as_array)
         return np.arctan2(interm[1], interm[0])
 
+    def move_along_sin_rule(self, vector, distance, unit_distance):
+        self.position.x += vector[0]
+        self.position.y += vector[1]
+
+        print(self.position.as_array)
+
+
+
     def move_along_line(self, m, s):
 
         """
 
         :param m: angle of line
         :param s: length of line
-        """
-        """"
-        keep as static
-        this really improves performance and gives much more consistent execution time
         """
 
         x, y = self.position.as_array

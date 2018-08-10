@@ -1,5 +1,4 @@
 import time
-from itertools import chain
 
 from numba import *
 from typing import List
