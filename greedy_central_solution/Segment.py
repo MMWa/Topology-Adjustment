@@ -15,15 +15,6 @@ class Segment:
         self.hasHidden = False
         self.hasRelays = True
 
-    def __gt__(self, other):
-        return other.distance < self.distance
-
-    def __ge__(self, other):
-        return not self.distance < other.distance
-
-    def __le__(self, other):
-        return not other.distance < self.distance
-
     @property
     def as_array(self):
         return [self.pointA, self.pointB]

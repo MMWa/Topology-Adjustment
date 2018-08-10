@@ -170,29 +170,5 @@ if __name__ == "__main__":
     test_list.execute_pipeline()
     end = time.time()
     print("execution time - " + str(end - start))
-    #
-    # # now we run the test
-    # # broadcast from node zero
-    # test_list.node_list[0].test_register = RegisterStates.sending
-    # x: Node
-    # loop_state = True
-    #
-    # while loop_state:
-    #     loop_state = False
-    #     temp_hold = []
-    #
-    #     for i in chain(test_list.node_list, test_list.relay_list):
-    #         if i.test_register == RegisterStates.no_state:
-    #             loop_state = True
-    #
-    #         if i.test_register == RegisterStates.sending:
-    #             temp_hold.append(i)
-    #
-    #     for x in temp_hold:
-    #         for k in chain(test_list.node_list, test_list.relay_list):
-    #             dx = x.distance_to(k)
-    #             if dx >= test_list.unit_distance and not (x.test_register is RegisterStates.passed):
-    #                 k.test_register = RegisterStates.sending
-    #                 x.test_register = RegisterStates.passed
 
     test_list.to_plot()

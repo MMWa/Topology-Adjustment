@@ -6,6 +6,10 @@ from greedy_central_solution import GreedyCentralSolution
 from fui import WindowManager
 from simulation.node import Node, Pos
 
+import os
+import psutil
+
+
 if __name__ == "__main__":
     node_selector = 1
 
@@ -77,5 +81,8 @@ if __name__ == "__main__":
             if node_selector == len(node_list):
                 node_selector = 1
 
+        process = psutil.Process(os.getpid())
+        print(process.memory_info().rss)
 
-        #node_list[1].position.velocity_add([randint(0, 2), randint(0, 2)])
+
+        # node_list[1].position.velocity_add([randint(0, 2), randint(0, 2)])
