@@ -70,8 +70,8 @@ class GreedyCentralSolution(NodeNetwork):
             node_selector.has_segment = True
             self.__segment_list.append(tmp_segment)
 
-            if tmp_segment.hasHidden:
-                self.__hidden_node_list.append(tmp_segment.pointA)
+            if tmp_segment.has_hidden:
+                self.__hidden_node_list.append(tmp_segment.point_a)
 
     def __add_relays(self, distance_multiplier):
         for i in self.__segment_list:

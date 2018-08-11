@@ -3,7 +3,7 @@ import math
 import numpy as np
 
 
-class PropagationModel():
+class PropagationModel:
     def __init__(self, noise=2):
         self._noise = noise
 

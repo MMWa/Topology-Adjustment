@@ -1,4 +1,3 @@
-from copy import copy
 from typing import List
 
 import numpy as np
@@ -12,6 +11,7 @@ __author__ = "Mohamed Wahba (MMWa)"
 __version__ = "1.0"
 __maintainer__ = "MMWa"
 
+
 class ExhaustiveCentralSolution(NodeNetwork):
     __search_space: List[Node]
 
@@ -19,7 +19,7 @@ class ExhaustiveCentralSolution(NodeNetwork):
     relay_list: List[Node]
     node_list: List[Node]
 
-    def __init__(self,unit_distance, full_list=None):
+    def __init__(self, unit_distance, full_list=None):
         self.__search_space = []
         self.unit_distance = unit_distance
         self.grid_resolution = 3
@@ -37,14 +37,13 @@ class ExhaustiveCentralSolution(NodeNetwork):
 
     def exhaust(self):
 
-
         mean = []
         for i in self.node_list:
             mean.append(i.position.as_array)
 
-        [x,y] = np.mean(mean, axis=0)
+        [x, y] = np.mean(mean, axis=0)
 
-        start_point = ExhaustiveNode(Pos(x,y))
+        start_point = ExhaustiveNode(Pos(x, y))
         self.relay_list.append(start_point)
         self.PointsInCircum(start_point, self.unit_distance)
 
@@ -55,13 +54,13 @@ class ExhaustiveCentralSolution(NodeNetwork):
             self.PointsInCircum(i, self.unit_distance)
             self.to_plot()
 
-            holder = list(map(lambda x:  x.data, self.node_list))
+            holder = list(map(lambda x: x.data, self.node_list))
             if all(holder):
                 break
 
     def PointsInCircum(self, reference: Node, radius):
 
-        n = np.multiply(2,np.pi)
+        n = np.multiply(2, np.pi)
 
         # will always give 6, maybe a useless piece of code
         n_i = int(np.floor(n))

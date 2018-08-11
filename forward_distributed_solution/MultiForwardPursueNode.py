@@ -1,4 +1,3 @@
-from enum import Enum, auto
 from typing import List
 
 from greedy_central_solution import GreedyCentralSolution
@@ -26,7 +25,6 @@ class MultiForwardPursueNode(Node):
             super().__init__()
 
         self.proof = GreedyCentralSolution(self.unit_distance * .8)
-
 
     @property
     def environment(self):

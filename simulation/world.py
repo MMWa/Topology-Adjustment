@@ -1,7 +1,7 @@
 import math
 
 
-class World():
+class World:
     def __init__(self):
         self.maxDistance = 10
 

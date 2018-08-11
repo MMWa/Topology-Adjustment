@@ -1,4 +1,3 @@
-import math
 from typing import List
 
 from greedy_central_solution import GreedyCentralSolution
@@ -10,9 +9,9 @@ class ForwardPursueNode(Node):
     __environment: List[Node]
 
     def __init__(self, environment, unit_distance, position=None, in_node=None, pursue_target=None):
-
-        if type(in_node) is type(Node):
-            self = in_node
+        #
+        # if type(in_node) is type(Node):
+        #     self = in_node
 
         self.__a, self.__global_relay_link = environment
         self.pursue_target = None
@@ -43,6 +42,8 @@ class ForwardPursueNode(Node):
     def follow(self):
         if self.type is NodeType.Relay:
             # a propegated velocity is used to move everything around
+
+            print("follow works")
             self.proof.node_list = self.environment
 
             self.move_along_line(self.angle_to(self.pursue_target),
@@ -50,27 +51,27 @@ class ForwardPursueNode(Node):
 
             try:
                 self.proof.execute_pipeline()
-                self.move_along_line(self.angle_to(self.proof.relay_list[0]), self.distance_to(self.proof.relay_list[0]) * .6)
+                self.move_along_line(self.angle_to(self.proof.relay_list[0]),
+                                     self.distance_to(self.proof.relay_list[0]) * .6)
                 self.proof.reset()
             except:
-                try:
-                    self.__global_relay_link.remove(self)
-                except:
-                    pass
+                pass
 
         elif self.type is NodeType.Home:
             if self.distance_to(self.pursue_target) > self.unit_distance * .8:
-                new_node = ForwardPursueNode([self.__a, self.__global_relay_link], self.unit_distance, in_node=Node(Pos(0, 0)))
+                new_node = ForwardPursueNode([self.__a, self.__global_relay_link], self.unit_distance,
+                                             in_node=Node(Pos(0, 0)))
 
                 new_node.type = NodeType.Relay
-                new_node.move_along_line(new_node.angle_to(self.pursue_target), self.distance_to(self.pursue_target) * .8)
+                new_node.move_along_line(new_node.angle_to(self.pursue_target),
+                                         self.distance_to(self.pursue_target) * .8)
 
                 new_node.pursue_target = self.pursue_target
                 self.pursue_target = new_node
                 self.__global_relay_link.append(new_node)
 
             # if in call-back range
-            if self.distance_to(self.pursue_target) < self.unit_distance * .1:
+            if self.distance_to(self.pursue_target) < self.unit_distance * .3:
                 current_target = self.pursue_target
                 self.pursue_target = current_target.pursue_target
                 try:

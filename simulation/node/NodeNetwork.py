@@ -13,7 +13,6 @@ __maintainer__ = "MMWa"
     
     NodeNetwork - is a class that handles the calculations and 
     integrating the nodes with the calculations
-
 """
 
 

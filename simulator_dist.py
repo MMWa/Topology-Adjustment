@@ -6,7 +6,6 @@ from greedy_central_solution import GreedyCentralSolution
 from fui import WindowManager
 from simulation.node import Node, Pos
 
-
 if __name__ == "__main__":
     node_selector = 1
 
@@ -15,19 +14,18 @@ if __name__ == "__main__":
     # create a list of nodes, this is our scenario
     node_list = []
     a_node = Node(Pos(0, 0))
-    b_node = Node(Pos(1.7*10, 1*10))
-    c_node = Node(Pos(2*10, 2*10))
+    b_node = Node(Pos(1.7 * 10, 1 * 10))
+    c_node = Node(Pos(2 * 10, 2 * 10))
 
     node_list.append(a_node)
     node_list.append(b_node)
-    #node_list.append(c_node)
+    # node_list.append(c_node)
 
     # shove the list into a scenario solver
     dist_list = ForwardDecentralizedSolution(40, node_list)
-    greedy_list = GreedyCentralSolution(40*.8, node_list)
+    greedy_list = GreedyCentralSolution(40 * .8, node_list)
 
     game_window = WindowManager()
-
 
     while True:
 
@@ -49,7 +47,6 @@ if __name__ == "__main__":
             game_window.pursue_relays.append(x.position.as_int_array)
 
         game_window.selection = node_list[node_selector].position.as_int_array
-
 
         # call the tick/draw function
         game_window.tick(deltaT)

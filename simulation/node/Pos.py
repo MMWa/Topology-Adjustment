@@ -4,7 +4,7 @@ from copy import copy
 
 class Pos:
     def __init__(self, x=None, y=None):
-        self.__last_velocity = [0,0]
+        self.__last_velocity = [0, 0]
         if x is None:
             self.x = random.uniform(0, 50)
         else:
@@ -25,7 +25,7 @@ class Pos:
 
         vel = copy(self.__last_velocity)
 
-        self.__last_velocity = [0,0]
+        self.__last_velocity = [0, 0]
 
         return vel
 

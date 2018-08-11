@@ -23,7 +23,7 @@ if __name__ == "__main__":
     # shove the list into a scenario solver
     greedy_list = GreedyCentralSolution(20, node_list)
     pursue_list = PursueCentralSolution(20, node_list)
-    exhaustive_list = ExhaustiveCentralSolution(20, node_list )
+    exhaustive_list = ExhaustiveCentralSolution(20, node_list)
     game_window = WindowManager()
 
     while True:

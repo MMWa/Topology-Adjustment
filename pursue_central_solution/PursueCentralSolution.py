@@ -5,7 +5,6 @@ from simulation.node import NodeNetwork, Node, Pos
 
 
 class PursueCentralSolution(NodeNetwork):
-
     # extra type assertion for intellisense
     relay_list: List[Node]
     node_list: List[Node]
@@ -18,9 +17,9 @@ class PursueCentralSolution(NodeNetwork):
 
     def execute_pipeline(self):
         for i in self.node_list[1:]:
-            count = int(np.floor(self.node_list[0].distance_to(i)/self.unit_distance))
+            count = int(np.floor(self.node_list[0].distance_to(i) / self.unit_distance))
 
-            [x,y] = self.node_list[0].position.as_array
+            [x, y] = self.node_list[0].position.as_array
 
             for _ in range(count):
                 x, y = self.__move_along_line(self.node_list[0].angle_to(i), self.unit_distance, x, y)
@@ -51,7 +50,6 @@ class PursueCentralSolution(NodeNetwork):
             x_o = np.add(x, x_o)
             y_o = np.add(y, y_o)
         return x_o, y_o
-
 
 
 if __name__ == "__main__":

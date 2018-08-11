@@ -17,7 +17,6 @@ class WindowManager:
         self.surface_overlay = pygame.Surface(self.screen.get_size(), pygame.SRCALPHA, 32)
         self.surface_nodes = pygame.Surface(self.screen.get_size(), pygame.SRCALPHA, 32)
 
-
         pygame.font.init()
         self.myfont = pygame.font.SysFont('Comic Sans MS', 30)
 
@@ -32,7 +31,6 @@ class WindowManager:
         self.selection = 0
 
         self.window_offset = 200
-
 
     def catch_events(self):
         for event in pygame.event.get():
@@ -63,7 +61,7 @@ class WindowManager:
         point_height = point_radius * 2
 
         for x in self.greedy_relays:
-            pygame.draw.circle(self.surface_overlay, (0, 0, 0, 20), self.to_pygame(x, 20), 40,1)
+            pygame.draw.circle(self.surface_overlay, (0, 0, 0, 20), self.to_pygame(x, 20), 40, 1)
 
         for x in self.pursue_relays:
             pygame.draw.circle(self.surface_nodes, self.GREEN, self.to_pygame(x, point_height), point_radius)
@@ -76,8 +74,6 @@ class WindowManager:
                 pygame.draw.circle(self.surface_nodes, self.BLACK, self.to_pygame(x, point_height), point_radius)
             else:
                 pygame.draw.circle(self.surface_nodes, self.RED, self.to_pygame(x, point_height), point_radius)
-
-
 
         textsurface1 = self.myfont.render("relay count: " + str(len(self.greedy_relays)), False, (0, 0, 0))
         textsurface2 = self.myfont.render("relay count: " + str(len(self.pursue_relays)), False, (0, 0, 0))
@@ -93,7 +89,7 @@ class WindowManager:
 
     def to_pygame(self, coords, obj_height):
         """Convert an object's coords into pygame coordinates (lower-left of object => top left in pygame coords)."""
-        return (coords[0] + self.window_offset, (self.size[1] - self.window_offset) - coords[1] - obj_height)
+        return coords[0] + self.window_offset, (self.size[1] - self.window_offset) - coords[1] - obj_height
 
     def quit(self):
         pygame.quit()

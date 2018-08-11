@@ -63,7 +63,6 @@ class MultiForwardPursueNode(Node):
         #         except:
         #             pass
 
-        little_set = []
         for x in self.pursue_target:
             print("we runnning")
             if self.type is NodeType.Relay:

@@ -41,8 +41,6 @@ class Node:
         self.Connection_Count = 0
         self.test_register = RegisterStates.no_state
 
-
-
     def add_connection(self, u):
         self.Connection_List.append(u)
         self.Connection_Count += 1
@@ -81,13 +79,11 @@ class Node:
         interm = np.subtract(target.position.as_array, self.position.as_array)
         return np.arctan2(interm[1], interm[0])
 
-    def move_along_sin_rule(self, vector, distance, unit_distance):
+    def move_along_sin_rule(self, vector):
         self.position.x += vector[0]
         self.position.y += vector[1]
 
         print(self.position.as_array)
-
-
 
     def move_along_line(self, m, s):
 
@@ -129,7 +125,6 @@ class Node:
 
     def __le__(self, other):
         return not np.greater(other.position.as_array, self.position.as_array)
-
 
 
 if __name__ == "__main__":
