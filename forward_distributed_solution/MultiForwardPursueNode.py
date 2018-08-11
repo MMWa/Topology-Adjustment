@@ -1,5 +1,7 @@
 from enum import Enum, auto
 from typing import List
+
+from greedy_central_solution import GreedyCentralSolution
 from simulation.node import Node, Pos
 from simulation.node.Node import NodeType
 
@@ -23,6 +25,9 @@ class MultiForwardPursueNode(Node):
         else:
             super().__init__()
 
+        self.proof = GreedyCentralSolution(self.unit_distance * .8)
+
+
     @property
     def environment(self):
         accumulator = []
@@ -38,7 +43,15 @@ class MultiForwardPursueNode(Node):
         for x in self.pursue_target:
             if self.distance_to(x) > self.unit_distance * .8:
                 if self.type is NodeType.Relay:
-                    self.move_along_line(self.angle_to(x), self.unit_distance/12)
+                    self.move_along_line(self.angle_to(x), (self.distance_to(x) - self.unit_distance) * .2)
+
+                    try:
+                        self.proof.execute_pipeline()
+                        self.move_along_line(self.angle_to(self.proof.relay_list[0]),
+                                             self.distance_to(self.proof.relay_list[0]) * .6)
+                        self.proof.reset()
+                    except:
+                        pass
 
 
 

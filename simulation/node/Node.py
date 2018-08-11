@@ -2,7 +2,6 @@ import math
 
 from simulation.node.Pos import Pos
 
-from numba import *
 import numpy as np
 from enum import Enum, auto
 import uuid
@@ -24,7 +23,7 @@ class NodeType(Enum):
 class Node:
     def __init__(self, position=None, internal_id=None):
         self.isHidden = False
-        self.hasSegment = 0
+        self.has_segment = 0
         self.__data = None
         self.type = NodeType.End
 
@@ -41,6 +40,8 @@ class Node:
         self.Connection_List = []
         self.Connection_Count = 0
         self.test_register = RegisterStates.no_state
+
+
 
     def add_connection(self, u):
         self.Connection_List.append(u)
@@ -69,8 +70,6 @@ class Node:
     def position(self) -> Pos:
         return self.__position
 
-    # TODO: GPU run using tensorflow
-    @jit()
     def distance_to(self, target) -> float:
         intermediate = np.subtract(self.position.as_array, target.position.as_array)
         intermediate = np.square(intermediate)

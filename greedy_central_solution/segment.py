@@ -1,44 +1,43 @@
-from numba import *
 import numpy as np
 from simulation.node.Node import Node
 from simulation.node.Pos import Pos
 
 
-class Segment:
-    hasRelays: bool
-    hasHidden: bool
+class segment:
+    has_relays: bool
+    has_hidden: bool
 
     def __init__(self, a: Node, b: Node, distance):
-        self.pointA = a
-        self.pointB = b
+        self.point_a = a
+        self.point_b = b
         self.distance = distance
-        self.hasHidden = False
-        self.hasRelays = True
+        self.has_hidden = False
+        self.has_relays = True
 
     @property
     def as_array(self):
-        return [self.pointA, self.pointB]
+        return [self.point_a, self.point_b]
 
     def distance_to(self, node: Node):
-        disA = self.pointA.distance_to(node)
-        disB = self.pointA.distance_to(self.pointB)
-        disC = self.pointB.distance_to(node)
+        dis_a = self.point_a.distance_to(node)
+        dis_b = self.point_a.distance_to(self.point_b)
+        dis_c = self.point_b.distance_to(node)
 
         # A & C are the distances from segment edges to the NODE
-        ac_array = np.sort([disA, disC])
+        ac_array = np.sort([dis_a, dis_c])
 
         # theta length calculation
-        if ac_array[0] != disA:
-            n1 = self.pointA
-            theta_length = np.add(np.square(disB), np.square(disC))
-            theta_length = np.subtract(theta_length, np.square(disA))
+        if ac_array[0] != dis_a:
+            n1 = self.point_a
+            theta_length = np.add(np.square(dis_b), np.square(dis_c))
+            theta_length = np.subtract(theta_length, np.square(dis_a))
 
         else:
-            n1 = self.pointB
-            theta_length = np.add(np.square(disB), np.square(disA))
-            theta_length = np.subtract(theta_length, np.square(disC))
+            n1 = self.point_b
+            theta_length = np.add(np.square(dis_b), np.square(dis_a))
+            theta_length = np.subtract(theta_length, np.square(dis_c))
 
-        theta_length = np.divide(theta_length, np.prod([2, disB, disC]))
+        theta_length = np.divide(theta_length, np.prod([2, dis_b, dis_c]))
         theta_length = np.arccos(theta_length)
         theta_length = np.absolute(theta_length)
 
@@ -53,7 +52,7 @@ class Segment:
         if theta_length < np.pi / 2:
             # the algorithm that does the perpendicular line
             # calculate gradients
-            m1 = np.subtract(self.pointB.position.as_array, self.pointA.position.as_array)
+            m1 = np.subtract(self.point_b.position.as_array, self.point_a.position.as_array)
 
             # add constant to remove any zero issues
 
@@ -74,17 +73,17 @@ class Segment:
             new_node = Node(position=Pos(x0, y0))
             new_node.isHidden = True
 
-            ret_segment = Segment(new_node, node, new_node.distance_to(node))
-            ret_segment.hasHidden = True
+            ret_segment = segment(new_node, node, new_node.distance_to(node))
+            ret_segment.has_hidden = True
             return ret_segment
         else:
             # standard routing
-            new_node = self.pointA
+            new_node = self.point_a
             # insures we do segment linking instead of pointless linking
             # forces conformity to the gained asset concept
             if not new_node.isHidden:
-                ret_segment = Segment(self.pointB, node, self.pointB.distance_to(node))
-                return ret_segment
+                ret_segment = segment(self.point_b, node, self.point_b.distance_to(node))
             else:
-                ret_segment = Segment(self.pointB, node, np.inf)
-                return ret_segment
+                ret_segment = segment(self.point_b, node, np.inf)
+
+            return ret_segment

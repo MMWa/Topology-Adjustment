@@ -5,7 +5,7 @@ from forward_distributed_solution.MultiForwardDecentralizedSolution import Multi
 from greedy_central_solution import GreedyCentralSolution
 from fui import WindowManager
 from simulation.node import Node, Pos
-
+from simulation.node.Node import NodeType
 
 if __name__ == "__main__":
     node_selector = 1
@@ -71,7 +71,9 @@ if __name__ == "__main__":
             print("Attempt to trigger Debugger")
 
         if event == K_o:
-            node_list.append(Node(Pos(0, 0)))
+            to_add = Node(Pos(0, 0))
+            to_add.type = NodeType.End
+            node_list.append(to_add)
 
         if event == K_p:
             node_selector += 1

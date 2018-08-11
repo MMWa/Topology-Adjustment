@@ -1,14 +1,11 @@
 import math
 import time
-
-from numba import *
 from typing import List
 import numpy as np
 
-from simulation.node.Node import RegisterStates
 from simulation.node.NodeNetwork import NodeNetwork
 from simulation.node import Node, Pos
-from greedy_central_solution.Segment import Segment
+from greedy_central_solution.segment import segment
 
 __author__ = "Mohamed Wahba (MMWa)"
 __version__ = "1.0"
@@ -18,13 +15,13 @@ __maintainer__ = "MMWa"
     This file contains the calculations for the central solution, 
     used to calculate the closest to optimum network topology.
 
-    NodeNetwork - is a class that handles the calculations and integrating the nodes with the calculations
-
+    NodeNetwork - is a class that handles the calculations and 
+    integrating the nodes with the calculations
 """
 
 
 class GreedyCentralSolution(NodeNetwork):
-    __segment_list: List[Node]
+    __segment_list: List[segment]
     __hidden_node_list: List[Node]
 
     # extra type assertion for intellisense
@@ -43,7 +40,7 @@ class GreedyCentralSolution(NodeNetwork):
 
         # fist make sure segment flag is reset
         for x in self.node_list:
-            x.hasSegment = False
+            x.has_segment = False
 
         # code for first segment
         temp_hold = []
@@ -51,26 +48,26 @@ class GreedyCentralSolution(NodeNetwork):
             temp_hold.append(self.node_list[0].distance_to(x))
 
         closest = np.argmin(temp_hold)
-        self.node_list[0].hasSegment = True
-        self.node_list[closest + 1].hasSegment = True
+        self.node_list[0].has_segment = True
+        self.node_list[closest + 1].has_segment = True
 
-        self.__segment_list.append(Segment(self.node_list[0], self.node_list[closest + 1], temp_hold[closest]))
+        self.__segment_list.append(segment(self.node_list[0], self.node_list[closest + 1], temp_hold[closest]))
 
         # code for the rest
         node_selector = 0
         for _ in self.node_list[1:-1]:
-            minDistance = np.inf
+            min_distance = np.inf
             for j in self.__segment_list:
                 for i in self.node_list:
-                    if not i.hasSegment:
-                        newSegment = j.distance_to(i)
+                    if not i.has_segment:
+                        new_segment = j.distance_to(i)
 
-                        if newSegment.distance < minDistance:
+                        if new_segment.distance < min_distance:
                             node_selector = i
-                            minDistance = newSegment.distance
-                            tmp_segment = newSegment
+                            min_distance = new_segment.distance
+                            tmp_segment = new_segment
             # there is a risk of reference before assignment here, if the numbers dont play nice
-            node_selector.hasSegment = True
+            node_selector.has_segment = True
             self.__segment_list.append(tmp_segment)
 
             if tmp_segment.hasHidden:
@@ -78,32 +75,30 @@ class GreedyCentralSolution(NodeNetwork):
 
     def __add_relays(self, distance_multiplier):
         for i in self.__segment_list:
-            if not i.hasHidden:
-                # mVal = np.subtract(i.pointB.position.as_array, i.pointA.position.as_array)
-                # mVal = np.arctan2(mVal[1], mVal[0])
-                mVal = i.pointA.angle_to(i.pointB)
+            if not i.has_hidden:
+                mVal = i.point_a.angle_to(i.point_b)
 
-                [x, y] = i.pointA.position.as_array
+                [x, y] = i.point_a.position.as_array
 
                 relay_count = int(np.floor(i.distance / distance_multiplier))
 
-                for j in range(relay_count):
+                for _ in range(relay_count):
                     x, y = self.__move_along_line(mVal, distance_multiplier, x, y)
                     self.relay_list.append(Node(Pos(x, y)))
 
-                i.hasRelays = True
+                i.has_relays = True
 
         for i in self.__segment_list:
 
-            if i.hasHidden:
+            if i.has_hidden:
                 internal_found = np.inf
                 for k in self.relay_list:
-                    query_distance = i.pointA.distance_to(k)
+                    query_distance = i.point_a.distance_to(k)
                     if query_distance < internal_found:
                         internal_found = query_distance
                         [x, y] = k.position.as_array
 
-                mVal = np.subtract(i.pointB.position.as_array, [x, y])
+                mVal = np.subtract(i.point_b.position.as_array, [x, y])
                 mVal = np.arctan2(mVal[1], mVal[0])
 
                 relay_count = int(np.floor(i.distance / distance_multiplier))
@@ -113,7 +108,6 @@ class GreedyCentralSolution(NodeNetwork):
                     self.relay_list.append(Node(Pos(x, y)))
 
     @staticmethod
-    @jit
     def __move_along_line(m, s, x, y):
 
         g = math.tan(m)
@@ -122,10 +116,10 @@ class GreedyCentralSolution(NodeNetwork):
         g_factor = 1 + g_factor
         g_factor = math.sqrt(g_factor)
 
-        x_o = 1/g_factor
+        x_o = 1 / g_factor
         x_o = s * x_o
 
-        y_o = g/g_factor
+        y_o = g / g_factor
         y_o = s * y_o
 
         if m > np.pi / 2 or m < - np.pi / 2:

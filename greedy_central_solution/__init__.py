@@ -1,4 +1,2 @@
 from greedy_central_solution.GreedyCentralSolution import GreedyCentralSolution
-from greedy_central_solution.Segment import Segment
-
-
+from greedy_central_solution.segment import segment

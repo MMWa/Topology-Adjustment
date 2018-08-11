@@ -1,7 +1,5 @@
+from typing import List
 import numpy as np
-from typing import List, Any
-import time
-from numba import *
 from simulation.node import Node, Pos
 from simulation.IPMaker import IPMaker
 
@@ -13,7 +11,8 @@ __maintainer__ = "MMWa"
     This file contains the calculations for the central solution, 
     used to calculate the closest to optimum network topology.
     
-    NodeNetwork - is a class that handles the calculations and integrating the nodes with the calculations
+    NodeNetwork - is a class that handles the calculations and 
+    integrating the nodes with the calculations
 
 """
 
