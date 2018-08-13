@@ -38,7 +38,7 @@ class BackwardPursueNode(Node):
     def environment_centroid(self):
         points = list(map(lambda x: x.position.as_array, self.environment))
         points = np.sum(points, axis=0)
-        return np.divide(points,len(self.environment))
+        return np.divide(points, len(self.environment))
 
     def move_to(self, target):
         self.last_caller = target
@@ -47,8 +47,9 @@ class BackwardPursueNode(Node):
                 print("try started")
                 self.proof.node_list = self.environment
                 self.proof.execute_pipeline()
-                self.move_along_line(self.angle_to(self.proof.relay_list[0]), self.distance_to(self.proof.relay_list[0]) * .6)
-                print("try  successful")
+                self.move_along_line(self.angle_to(self.proof.relay_list[0]),
+                                     self.distance_to(self.proof.relay_list[0]) * .6)
+                print("try successful")
             except Exception as e:
                 # target.follower = self.follower
                 # try:
@@ -60,6 +61,17 @@ class BackwardPursueNode(Node):
                 # print("try failed - node removed")
 
             self.proof.reset()
+
+            try:
+                if target.last_caller in self.environment:
+                    if target.type is NodeType.Relay:
+                        the_team = target
+                        target.last_caller.follower = self
+                        # self.follower = self.follower.follower
+                        self.__global_relay_link.remove(the_team)
+                        print("this got called")
+            except Exception as e:
+                print(e)
 
             self.move_along_line(self.angle_to(target), (self.distance_to(target) - self.unit_distance) * .2)
 
@@ -99,26 +111,6 @@ class BackwardPursueNode(Node):
                     self.__global_relay_link.remove(the_team)
                     print("this got called")
 
-
-            #
-            # trigger = 0
-            # for x in self.__global_relay_link:
-            #     if self == x:
-            #         trigger = True
-            # if trigger:
-            #     self.__global_relay_link.remove(self)
-
-            # for x in self.environment:
-            #     if self.distance_to(self.follower) * 0.8 > self.distance_to(x):
-            #         print(str(self.distance_to(self.follower)) + " > " + str(self.distance_to(x)))
-            #         if x.follower is not self:
-            #             try:
-            #                 if x.follower.type is not NodeType.End:
-            #                     self.follower = x
-            #             except Exception as e:
-            #                 print(e)
-            #                 print("There are no followers to follow")
-            # if self.distance_to(self.follower) < self.unit_distance:
             self.follower.move_to(self)
 
         if self.type == NodeType.End:
@@ -128,12 +120,12 @@ class BackwardPursueNode(Node):
             self.follower.move_to(self)
 
         if self.type == NodeType.Home:
+            pass
             # i think this code might do nothing
-            for x in self.environment:
-                if self.distance_to(x) < self.unit_distance*.6:
-                    if x is not self:
-                        x.follower = self
-
+            # for x in self.environment:
+            #     if self.distance_to(x) < self.unit_distance * .6:
+            #         if x is not self:
+            #             x.follower = self
 
 
 class BackwardDecentralizedSolution(NodeNetwork):
