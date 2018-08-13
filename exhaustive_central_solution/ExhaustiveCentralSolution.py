@@ -34,6 +34,10 @@ class ExhaustiveCentralSolution(NodeNetwork):
 
     def execute_pipeline(self):
         self.exhaust()
+        self.reduce()
+
+    def reduce(self):
+        pass
 
     def exhaust(self):
 
@@ -110,10 +114,10 @@ if __name__ == "__main__":
     test_list.add(Node(Pos(10, 11)))
     test_list.add(Node(Pos(9, 20)))
     test_list.add(Node(Pos(25, 18)))
-    test_list.add(Node(Pos(2, 15)))
-    test_list.add(Node(Pos(18, -5)))
-    test_list.add(Node(Pos(25, 25)))
-    test_list.add(Node(Pos(-5, 25)))
+    # test_list.add(Node(Pos(2, 15)))
+    # test_list.add(Node(Pos(18, -5)))
+    # test_list.add(Node(Pos(25, 25)))
+    # test_list.add(Node(Pos(-5, 25)))
 
     test_list.exhaust()
 

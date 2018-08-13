@@ -1,5 +1,7 @@
 from typing import List
-
+import time
+from pygame.constants import *
+from fui import WindowManager
 from greedy_central_solution import GreedyCentralSolution
 from simulation.node import NodeNetwork, Node, Pos
 from simulation.node.Node import NodeType
@@ -36,7 +38,6 @@ class ForwardPursueNode(Node):
             if not self.ID == x.ID:
                 if self.distance_to(x) < self.unit_distance * 1.2:
                     accumulator.append(x)
-
         return accumulator
 
     def follow(self):
@@ -52,10 +53,14 @@ class ForwardPursueNode(Node):
             try:
                 self.proof.execute_pipeline()
                 self.move_along_line(self.angle_to(self.proof.relay_list[0]),
-                                     self.distance_to(self.proof.relay_list[0]) * .6)
+                                     self.distance_to(self.proof.relay_list[0]) * .2)
                 self.proof.reset()
             except:
-                pass
+                # pass
+                try:
+                    self.__global_relay_link.remove(self)
+                except:
+                    pass
 
         elif self.type is NodeType.Home:
             if self.distance_to(self.pursue_target) > self.unit_distance * .8:
@@ -70,8 +75,30 @@ class ForwardPursueNode(Node):
                 self.pursue_target = new_node
                 self.__global_relay_link.append(new_node)
 
+            # do_flag = False
+            #
+            # for x in self.environment:
+            #     if self.distance_to(x)> self.unit_distance * .8:
+            #         try:
+            #             for y in x.environment:
+            #                 if self.distance_to(y) < self.unit_distance * .7:
+            #                     pass
+            #                 else:
+            #                     do_flag = True
+            #         except:
+            #             pass
+            #
+            # if do_flag:
+            #     new_node = ForwardPursueNode([self.__a, self.__global_relay_link], self.unit_distance,
+            #                                  in_node=Node(Pos(0, 0)))
+            #     new_node.type = NodeType.Relay
+            #     new_node.move_along_line(new_node.angle_to(x), self.unit_distance * .6)
+            #     new_node.pursue_target = x
+            #     self.pursue_target = new_node
+            #     self.__global_relay_link.append(new_node)
+
             # if in call-back range
-            if self.distance_to(self.pursue_target) < self.unit_distance * .3:
+            if self.distance_to(self.pursue_target) < self.unit_distance * .1:
                 current_target = self.pursue_target
                 self.pursue_target = current_target.pursue_target
                 try:
@@ -113,31 +140,72 @@ class ForwardDecentralizedSolution(NodeNetwork):
 
 
 if __name__ == "__main__":
+    node_selector = 1
+
+    move_coefficient = 10
+
     # create a list of nodes, this is our scenario
     node_list = []
-
     a_node = Node(Pos(0, 0))
-    b_node = Node(Pos(1.7, 1))
-    c_node = Node(Pos(1.3, 1))
+    b_node = Node(Pos(1.7 * 10, 1 * 10))
+    c_node = Node(Pos(2 * 10, 2 * 10))
 
     node_list.append(a_node)
     node_list.append(b_node)
-
-    test_dist = ForwardDecentralizedSolution(2, node_list)
-
-    # a_relay = MultiForwardPursueNode(test_dist.sandbox, 2, in_node=Node(Pos(1, 1)))
-    # a_relay.type = NodeType.Relay
-
     # node_list.append(c_node)
 
-    # test_dist.relay_list.append(a_relay)
-    # print(a_relay.environment)
-    print(test_dist.sandbox)
+    # shove the list into a scenario solver
+    dist_list = ForwardDecentralizedSolution(40, node_list)
+    greedy_list = GreedyCentralSolution(40 * .8, node_list)
 
-    test_dist.execute_pipeline()
+    game_window = WindowManager()
 
-    test_dist.to_plot()
+    while True:
 
-    # print(test_dist.home_node.distance_to(b_node))
+        # execute the scenario solver
+        deltaT = time.time()
+        dist_list.execute_pipeline()
+        greedy_list.execute_pipeline()
+        deltaT = time.time() - deltaT
 
-    # new set of test for inheratance
+        # take the solutions into the window rendered
+        for x in node_list:
+            game_window.nodes.append(x.position.as_int_array)
+
+        game_window.greedy_relays = []
+        for x in dist_list.relay_list[1:]:
+            game_window.greedy_relays.append(x.position.as_int_array)
+
+        for x in greedy_list.relay_list:
+            game_window.pursue_relays.append(x.position.as_int_array)
+
+        game_window.selection = node_list[node_selector].position.as_int_array
+
+        # call the tick/draw function
+        game_window.tick(deltaT)
+
+        # add random velocity onto the scenario, except to "base station"
+        greedy_list.reset()
+
+        event = game_window.catch_events()
+
+        if event == K_w:
+            node_list[node_selector].position.velocity_add([0, move_coefficient])
+        if event == K_s:
+            node_list[node_selector].position.velocity_add([0, -move_coefficient])
+        if event == K_a:
+            node_list[node_selector].position.velocity_add([-move_coefficient, 0])
+        if event == K_d:
+            node_list[node_selector].position.velocity_add([move_coefficient, 0])
+        if event == 92:
+            print("Attempt to trigger Debugger")
+
+        if event == K_o:
+            node_list.append(Node(Pos(0, 0)))
+
+        if event == K_p:
+            node_selector += 1
+            if node_selector == len(node_list):
+                node_selector = 1
+
+        # node_list[1].position.velocity_add([randint(0, 2), randint(0, 2)])

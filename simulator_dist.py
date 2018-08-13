@@ -1,7 +1,7 @@
 import time
 from pygame.constants import *
 
-from forward_distributed_solution.ForwardDecentralizedSolution import ForwardDecentralizedSolution
+from forward_distributed_solution.ForwardDecentralizedSolution import ForwardDecentralizedSolution, ForwardPursueNode
 from greedy_central_solution import GreedyCentralSolution
 from fui import WindowManager
 from simulation.node import Node, Pos

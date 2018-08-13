@@ -42,20 +42,23 @@ class GreedyCentralSolution(NodeNetwork):
         for x in self.node_list:
             x.has_segment = False
 
-        # code for first segment
-        temp_hold = []
-        for x in self.node_list[1:]:
-            temp_hold.append(self.node_list[0].distance_to(x))
+        try:
+            # code for first segment
+            temp_hold = []
+            for x in self.node_list[1:]:
+                temp_hold.append(self.node_list[0].distance_to(x))
 
-        closest = np.argmin(temp_hold)
-        self.node_list[0].has_segment = True
-        self.node_list[closest + 1].has_segment = True
+            closest = np.argmin(temp_hold)
+            self.node_list[0].has_segment = True
+            self.node_list[closest + 1].has_segment = True
 
-        self.__segment_list.append(segment(self.node_list[0], self.node_list[closest + 1], temp_hold[closest]))
+            self.__segment_list.append(segment(self.node_list[0], self.node_list[closest + 1], temp_hold[closest]))
+        except Exception as e:
+            print(e)
+            print("only one node given")
 
-        # code for the rest
-        node_selector = 0
-        for _ in self.node_list[1:-1]:
+
+        for _ in range(len(self.node_list)-1):
             min_distance = np.inf
             for j in self.__segment_list:
                 for i in self.node_list:
@@ -67,11 +70,17 @@ class GreedyCentralSolution(NodeNetwork):
                             min_distance = new_segment.distance
                             tmp_segment = new_segment
             # there is a risk of reference before assignment here, if the numbers dont play nice
-            node_selector.has_segment = True
-            self.__segment_list.append(tmp_segment)
+            try:
+                node_selector.has_segment = True
+                self.__segment_list.append(tmp_segment)
 
-            if tmp_segment.has_hidden:
-                self.__hidden_node_list.append(tmp_segment.point_a)
+                if tmp_segment.has_hidden:
+                    self.__hidden_node_list.append(tmp_segment.point_a)
+
+            except Exception as e:
+                print(e)
+                print("All segments greater than infinity or no segments other than first segment")
+                pass
 
     def __add_relays(self, distance_multiplier):
         for i in self.__segment_list:
