@@ -45,6 +45,7 @@ class GreedyCentralSolution(NodeNetwork):
         try:
             # code for first segment
             temp_hold = []
+            # we ignore the first one, because we calculate the solution relative to the home node
             for x in self.node_list[1:]:
                 temp_hold.append(self.node_list[0].distance_to(x))
 
@@ -57,8 +58,8 @@ class GreedyCentralSolution(NodeNetwork):
             print(e)
             print("only one node given")
 
-
-        for _ in range(len(self.node_list)-1):
+        # we do this because there are two nodes already with a solution since we have a special first run
+        for _ in range(len(self.node_list)-2):
             min_distance = np.inf
             for j in self.__segment_list:
                 for i in self.node_list:

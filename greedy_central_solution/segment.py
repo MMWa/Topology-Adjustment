@@ -19,25 +19,24 @@ class segment:
         return [self.point_a, self.point_b]
 
     def distance_to(self, node: Node):
-        dis_a = self.point_a.distance_to(node)
-        dis_b = self.point_a.distance_to(self.point_b)
-        dis_c = self.point_b.distance_to(node)
-
-        # A & C are the distances from segment edges to the NODE
-        ac_array = np.sort([dis_a, dis_c])
+        dis_b = self.point_a.distance_to(node)
+        dis_c = self.point_a.distance_to(self.point_b)
+        dis_a = self.point_b.distance_to(node)
 
         # theta length calculation
-        if ac_array[0] != dis_a:
+        if dis_b < dis_c:
             n1 = self.point_a
-            theta_length = np.add(np.square(dis_b), np.square(dis_c))
-            theta_length = np.subtract(theta_length, np.square(dis_a))
+            theta_length = np.add(np.square(dis_c), np.square(dis_a))
+            theta_length = np.subtract(theta_length, np.square(dis_b))
+
 
         else:
             n1 = self.point_b
-            theta_length = np.add(np.square(dis_b), np.square(dis_a))
-            theta_length = np.subtract(theta_length, np.square(dis_c))
+            theta_length = np.add(np.square(dis_c), np.square(dis_b))
+            theta_length = np.subtract(theta_length, np.square(dis_a))
 
-        theta_length = np.divide(theta_length, np.prod([2, dis_b, dis_c]))
+        theta_length = np.divide(theta_length, np.prod([2, dis_c, dis_a]))
+
         theta_length = np.arccos(theta_length)
         theta_length = np.absolute(theta_length)
 

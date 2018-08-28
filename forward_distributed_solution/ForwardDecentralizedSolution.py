@@ -56,11 +56,7 @@ class ForwardPursueNode(Node):
                                      self.distance_to(self.proof.relay_list[0]) * .2)
                 self.proof.reset()
             except:
-                # pass
-                try:
-                    self.__global_relay_link.remove(self)
-                except:
-                    pass
+                pass
 
         elif self.type is NodeType.Home:
             if self.distance_to(self.pursue_target) > self.unit_distance * .8:
@@ -75,37 +71,17 @@ class ForwardPursueNode(Node):
                 self.pursue_target = new_node
                 self.__global_relay_link.append(new_node)
 
-            # do_flag = False
-            #
-            # for x in self.environment:
-            #     if self.distance_to(x)> self.unit_distance * .8:
-            #         try:
-            #             for y in x.environment:
-            #                 if self.distance_to(y) < self.unit_distance * .7:
-            #                     pass
-            #                 else:
-            #                     do_flag = True
-            #         except:
-            #             pass
-            #
-            # if do_flag:
-            #     new_node = ForwardPursueNode([self.__a, self.__global_relay_link], self.unit_distance,
-            #                                  in_node=Node(Pos(0, 0)))
-            #     new_node.type = NodeType.Relay
-            #     new_node.move_along_line(new_node.angle_to(x), self.unit_distance * .6)
-            #     new_node.pursue_target = x
-            #     self.pursue_target = new_node
-            #     self.__global_relay_link.append(new_node)
-
             # if in call-back range
             if self.distance_to(self.pursue_target) < self.unit_distance * .1:
                 current_target = self.pursue_target
                 self.pursue_target = current_target.pursue_target
                 try:
+
                     self.__global_relay_link.remove(current_target)
                     print("triggered from the bottom")
-                except:
-                    print("form the bottom")
+                except Exception as e:
+                    print(e)
+                    print("Node removal error")
 
 
 class ForwardDecentralizedSolution(NodeNetwork):

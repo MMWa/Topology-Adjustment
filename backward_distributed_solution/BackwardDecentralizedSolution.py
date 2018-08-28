@@ -6,6 +6,7 @@ from greedy_central_solution import GreedyCentralSolution
 from fui import WindowManager, WindowManagerTypeTwo
 from simulation.node import NodeNetwork, Node, Pos
 from simulation.node.Node import NodeType
+import logging
 
 
 class BackwardPursueNode(Node):
@@ -15,8 +16,16 @@ class BackwardPursueNode(Node):
         self.__a, self.__global_relay_link = environment
         self.follower = follower
         self.unit_distance = unit_distance
-        self.proof = GreedyCentralSolution(self.unit_distance * .8)
+        self.proof = GreedyCentralSolution(self.unit_distance)
         self.last_caller = None
+        self.depth = 0
+        self.__depth_counter = 0
+        try:
+            self.home = self.__global_relay_link[0]
+        except:
+            self.home = self
+
+        self.call_counter = 0
 
         if in_node is not None:
             super().__init__(in_node.position)
@@ -26,12 +35,30 @@ class BackwardPursueNode(Node):
             super().__init__()
 
     @property
+    def depth_counter(self):
+        if self.type is NodeType.Home:
+            self.__depth_counter +=1
+            return self.__depth_counter
+        else:
+            return 0
+
+    @property
     def environment(self):
         accumulator = []
         for x in self.__a[1:] + self.__global_relay_link:
             if not self.ID == x.ID:
                 if self.distance_to(x) < self.unit_distance * 1.2:
-                    if x.type is NodeType.Relay:
+                    # if x.type is not NodeType.End:
+                    accumulator.append(x)
+        return accumulator
+
+    @property
+    def environment_infrastructure(self):
+        accumulator = []
+        for x in self.__a[1:] + self.__global_relay_link:
+            if not self.ID == x.ID:
+                if self.distance_to(x) < self.unit_distance * 1.2:
+                    if x.type is not NodeType.End:
                         accumulator.append(x)
         return accumulator
 
@@ -50,16 +77,41 @@ class BackwardPursueNode(Node):
         points = np.sum(points, axis=0)
         return np.divide(points, len(self.environment))
 
-    def move_to(self, target, forceful= False):
+    def move_to(self, target):
+        self.call_counter = 0
         self.last_caller = target
         if self.type == NodeType.Relay:
             # chain tightening code
+
             try:
-                if True == False:
+                # tighten using greedy method
+                self.proof.node_list = self.environment
+                self.proof.execute_pipeline()
+                print(self.proof.relay_list.__len__())
+                if self.proof.relay_list.__len__() > 3:
+
+                    new_node = BackwardPursueNode([self.__a, self.__global_relay_link], self.unit_distance,
+                                                  in_node=self.proof.relay_list[1])
+
+                    new_node.type = NodeType.Relay
+                    new_node.move_to(target)
+
+                    new_node.follower = self
+                    target.follower = new_node
+                    self.__global_relay_link.append(new_node)
+
+                self.proof.reset()
+            except Exception as e:
+                print(e)
+                print("-problem?")
+                pass
+            try:
+                if True is False:
                     # tighten using greedy method
                     self.proof.node_list = self.environment
                     self.proof.execute_pipeline()
-                    self.move_along_line(self.angle_to(self.proof.relay_list[0]), self.distance_to(self.proof.relay_list[0]) * .6)
+                    self.move_along_line(self.angle_to(self.proof.relay_list[0]),
+                                         self.distance_to(self.proof.relay_list[0]) * .6)
                     self.proof.reset()
 
                 else:
@@ -70,8 +122,8 @@ class BackwardPursueNode(Node):
                             to_go = Node(Pos(xs, ys))
                             self.move_along_line(self.angle_to(to_go), self.distance_to(to_go) * 0.6)
 
-                    elif len(self.environment) > 2:
-                        self.proof.node_list = self.environment
+                    elif len(self.environment) > 3:
+                        self.proof.node_list = self.environment_infrastructure
                         self.proof.execute_pipeline()
                         self.move_along_line(self.angle_to(self.proof.relay_list[0]),
                                              self.distance_to(self.proof.relay_list[0]) * .6)
@@ -79,21 +131,35 @@ class BackwardPursueNode(Node):
 
 
             except IndexError as e:
-                print("--------------------------------------------------")
-                print("try failed - couldn't find a solution")
-                # print(e)
+                log.error("--------------------------------------------------")
+                log.error("try failed - couldn't find a solution")
+                log.error(e)
                 # # force it for now
-                # try:
-                #     # self.__global_relay_link.remove(self)
-                #     print("handled by a self remove")
-                # except:
-                #     print("no hope in this one")
+                try:
+                    for j in self.follower.environment_infrastructure:
+                        if self.last_caller is j:
+                            self.last_caller.follower = self
+                            self.__global_relay_link.remove(self)
+
+                    self.last_caller.follower = self
+                    self.__global_relay_link.remove(self)
+                    log.error("Problem solved")
+                except Exception as er:
+                    log.error(er)
+                    log.error("no hope in this one")
 
             self.move_along_line(self.angle_to(target), (self.distance_to(target) - self.unit_distance) * .2)
 
         if self.type == NodeType.Home:
             if self.distance_to(target) > self.unit_distance * .8:
                 self.spawn_to(target)
+
+            for i in self.environment_infrastructure:
+                if self.distance_to(i) < 0.4 * self.unit_distance:
+                    for j in self.environment:
+                        if i.last_caller is j:
+                            i.last_caller.follower = self
+                            self.__global_relay_link.remove(i)
 
         if self.type == NodeType.End:
             if self.distance_to(target) > self.unit_distance * .8:
@@ -107,24 +173,31 @@ class BackwardPursueNode(Node):
         new_node.move_to(target)
 
         new_node.follower = self
+        new_node.depth = self.depth_counter
         target.follower = new_node
         self.__global_relay_link.append(new_node)
 
     def tick(self):
+        self.call_counter += 1
         if self.type == NodeType.Relay:
+            for x in self.environment_infrastructure:
+                if self.distance_to(x) < self.distance_to(self.follower):
+                    if x.distance_to(self.home) < self.follower.distance_to(self.home):
+                    # if self.depth < x.depth:
+                        self.follower = x
             self.follower.move_to(self)
+            if self.call_counter > 40:
+                self.__global_relay_link.remove(self)
 
         if self.type == NodeType.End:
-            force_flag = False
-            for x in self.environment:
+            for x in self.environment_infrastructure:
                 if self.distance_to(x) < self.distance_to(self.follower):
                     self.follower = x
-                    force_flag = True
-            self.follower.move_to(self, force_flag)
+            self.follower.move_to(self)
 
         if self.type == NodeType.Home:
-
             pass
+
 
 class BackwardDecentralizedSolution(NodeNetwork):
     home_node: Node
@@ -160,6 +233,8 @@ class BackwardDecentralizedSolution(NodeNetwork):
 
 
 if __name__ == "__main__":
+
+    log = logging.getLogger(__name__)
     node_selector = 1
     move_coefficient = 10
     unit_distance = 40
@@ -171,8 +246,9 @@ if __name__ == "__main__":
     node_list.append(a_node)
 
     # shove the list into a scenario solver
+    # the way the algorithms work makes for a .85 ratio in comms
     dist_list = BackwardDecentralizedSolution(unit_distance, node_list)
-    greedy_list = GreedyCentralSolution(unit_distance * .8, node_list)
+    greedy_list = GreedyCentralSolution(unit_distance, node_list)
 
     b_node = Node(Pos(1.7 * 10, 1 * 10))
     c_node = Node(Pos(2 * 10, 2 * 10))
@@ -188,29 +264,29 @@ if __name__ == "__main__":
     game_window = WindowManagerTypeTwo()
 
     while True:
-
+        greed_comparer = True
         # execute the scenario solver
         deltaT = time.time()
         dist_list.execute_pipeline()
-        # greedy_list.execute_pipeline()
+        if greed_comparer:
+            greedy_list.execute_pipeline()
         deltaT = time.time() - deltaT
 
         # take the solutions into the window rendered
-        game_window.nodes= node_list
+        game_window.nodes = node_list
 
         game_window.greedy_relays = []
         game_window.greedy_relays = dist_list.relay_list[1:]
-
-        # for x in greedy_list.relay_list:
-        #     game_window.pursue_relays.append(x.position.as_int_array)
+        if greed_comparer:
+            for x in greedy_list.relay_list:
+                game_window.pursue_relays.append(x.position.as_int_array)
 
         game_window.selection = node_list[node_selector].position.as_int_array
 
         # call the tick/draw function
         game_window.tick(deltaT)
-
-        # add random velocity onto the scenario, except to "base station"
-        # greedy_list.reset()
+        if greed_comparer:
+            greedy_list.reset()
 
         event = game_window.catch_events()
 
@@ -223,7 +299,7 @@ if __name__ == "__main__":
         if event == K_d:
             node_list[node_selector].position.velocity_add([move_coefficient, 0])
         if event == 92:
-            print("Attempt to trigger Debugger")
+            log.error("Attempt to trigger Debugger")
 
         if event == K_b:
             game_window.environment_toggle = not game_window.environment_toggle

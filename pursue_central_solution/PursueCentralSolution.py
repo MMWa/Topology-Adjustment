@@ -27,12 +27,12 @@ class PursueCentralSolution(NodeNetwork):
 
     @staticmethod
     def __move_along_line(m, s, x, y):
-
-        g = np.tan(m)
-        """"
+        """
         keep as static
         this really improves performance and gives much more consistent execution time
         """
+        g = np.tan(m)
+
         g_factor = np.square(g)
         g_factor = np.add(1, g_factor)
         g_factor = np.sqrt(g_factor)

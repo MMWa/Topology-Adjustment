@@ -62,8 +62,8 @@ class WindowManager:
         point_radius = 8
         point_height = point_radius * 2
 
-        for x in self.greedy_relays:
-            pygame.draw.circle(self.surface_overlay, (0, 0, 0, 20), self.to_pygame(x, 20), 40, 1)
+        # for x in self.greedy_relays:
+        #     pygame.draw.circle(self.surface_overlay, (0, 0, 0, 20), self.to_pygame(x, 20), 40, 1)
 
         for x in self.pursue_relays:
             pygame.draw.circle(self.surface_nodes, self.GREEN, self.to_pygame(x, point_height), point_radius)
@@ -175,6 +175,7 @@ class WindowManagerTypeTwo:
 
 
             pygame.draw.circle(self.surface_nodes, self.BLUE, self.to_pygame(x, point_height), point_radius)
+            pygame.draw.circle(self.surface_overlay, (0, 0, 0, 20), self.to_pygame(x, 20), 40, 1)
 
             if self.follower_toggle or self.caller_toggle:
                 pygame.draw.circle(self.surface_nodes, self.PALE_BLUE, self.to_pygame([x[0],x[1]+24], 0), 2)
