@@ -76,9 +76,7 @@ class ForwardPursueNode(Node):
                 current_target = self.pursue_target
                 self.pursue_target = current_target.pursue_target
                 try:
-
                     self.__global_relay_link.remove(current_target)
-                    print("triggered from the bottom")
                 except Exception as e:
                     print(e)
                     print("Node removal error")
