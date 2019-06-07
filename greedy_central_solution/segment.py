@@ -1,4 +1,6 @@
 import numpy as np
+import math
+
 from simulation.node.Node import Node
 from simulation.node.Pos import Pos
 
@@ -19,26 +21,33 @@ class segment:
         return [self.point_a, self.point_b]
 
     def distance_to(self, node: Node):
-        dis_b = self.point_a.distance_to(node)
-        dis_c = self.point_a.distance_to(self.point_b)
-        dis_a = self.point_b.distance_to(node)
+        dis_a = self.point_a.distance_to(node)
+        dis_b = self.point_a.distance_to(self.point_b)
+        dis_c = self.point_b.distance_to(node)
 
-        # theta length calculation
-        if dis_b < dis_c:
+        if dis_a > dis_c:
+            theta_length = (dis_b**2) + (dis_c**2) - (dis_a**2)
+            try:
+                theta_length = math.acos(theta_length / (2 * dis_b * dis_c))
+            except:
+                if (theta_length / (2 * dis_b * dis_c)) > 0:
+                    theta_length = math.acos(1)
+                else:
+                    theta_length = math.acos(-1)
             n1 = self.point_a
-            theta_length = np.add(np.square(dis_c), np.square(dis_a))
-            theta_length = np.subtract(theta_length, np.square(dis_b))
-
-
         else:
+            theta_length = (dis_b**2) + (dis_a**2) - (dis_c**2)
+            try:
+                theta_length = math.acos(theta_length / (2 * dis_b * dis_a))
+            except:
+                if (theta_length / (2 * dis_b * dis_a)) > 0:
+                    theta_length = math.acos(1)
+                else:
+                    theta_length = math.acos(-1)
+
             n1 = self.point_b
-            theta_length = np.add(np.square(dis_c), np.square(dis_b))
-            theta_length = np.subtract(theta_length, np.square(dis_a))
 
-        theta_length = np.divide(theta_length, np.prod([2, dis_c, dis_a]))
-
-        theta_length = np.arccos(theta_length)
-        theta_length = np.absolute(theta_length)
+        theta_length = abs(theta_length)
 
         # check whether the shortest line falls over the segment or outside the
         # segment
@@ -56,16 +65,15 @@ class segment:
             # add constant to remove any zero issues
 
             if not np.any(m1):
-                m1 = np.add(m1, 1e-12)
+                m1 = m1 + 1e-8
 
-            m1 = np.divide(m1[1], m1[0])
+            m1 = m1[1]/ m1[0]
             if m1 == 0:
-                m1 = np.add(1e-12, m1)
+                m1 = m1 + 1e-12
 
-            m2 = np.divide(-1, m1)
+            m2 = -1/m1
 
-            delta_m = np.subtract(m1, m2)
-
+            delta_m = m1-m2
             x0 = (node.position.y - m2 * node.position.x + m1 * n1.position.x - n1.position.y) / delta_m
             y0 = node.position.y - (m2 * (node.position.x - x0))
 
@@ -75,14 +83,14 @@ class segment:
             ret_segment = segment(new_node, node, new_node.distance_to(node))
             ret_segment.has_hidden = True
             return ret_segment
-        else:
-            # standard routing
-            new_node = self.point_a
-            # insures we do segment linking instead of pointless linking
-            # forces conformity to the gained asset concept
-            if not new_node.isHidden:
-                ret_segment = segment(self.point_b, node, self.point_b.distance_to(node))
-            else:
-                ret_segment = segment(self.point_b, node, np.inf)
 
-            return ret_segment
+        else:
+            if dis_a < dis_c:
+                choosen = self.point_a
+            else:
+                choosen = self.point_b
+
+            if not choosen.isHidden:
+                return segment(choosen, node, choosen.distance_to(node))
+            else:
+                return segment(choosen, node, 1000000000000)

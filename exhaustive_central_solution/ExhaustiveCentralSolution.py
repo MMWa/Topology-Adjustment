@@ -22,7 +22,7 @@ class ExhaustiveCentralSolution(NodeNetwork):
     def __init__(self, unit_distance, full_list=None):
         self.__search_space = []
         self.unit_distance = unit_distance
-        self.grid_resolution = 3
+        self.grid_resolution = 1
         self.max_iterations = 100
 
         self.a = Pos(-7, -7)
@@ -51,6 +51,7 @@ class ExhaustiveCentralSolution(NodeNetwork):
         self.relay_list.append(start_point)
         self.PointsInCircum(start_point, self.unit_distance)
 
+
         # recursion because a pointer to the array is used
         # it keeps changing size every time we run
         # the exit condition is no new items
@@ -64,13 +65,12 @@ class ExhaustiveCentralSolution(NodeNetwork):
 
     def PointsInCircum(self, reference: Node, radius):
 
-        n = np.multiply(2, np.pi)
+        n = np.multiply(1, np.pi)
 
         # will always give 6, maybe a useless piece of code
         n_i = int(np.floor(n))
 
         for i in range(0, n_i):
-
             h = 2 * np.pi / radius * i
             h = [np.cos(h), np.sin(h)]
             h = np.multiply(h, radius)

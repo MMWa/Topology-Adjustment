@@ -165,8 +165,8 @@ class WindowManagerTypeTwo:
 
         for y in self.greedy_relays:
             x = y.position.as_int_array
-            z = y.follower.position.as_int_array
-            w = y.last_caller.position.as_int_array
+            # z = y.follower.position.as_int_array
+            # w = y.last_caller.position.as_int_array
             env_list = y.environment
 
             if self.environment_toggle:
@@ -180,10 +180,10 @@ class WindowManagerTypeTwo:
             if self.follower_toggle or self.caller_toggle:
                 pygame.draw.circle(self.surface_nodes, self.PALE_BLUE, self.to_pygame([x[0],x[1]+24], 0), 2)
 
-            if self.follower_toggle:
-                pygame.draw.line(self.surface_nodes,self.PALE_BLUE, self.to_pygame([x[0],x[1]+24], 2), self.to_pygame(z, point_height))
-            if self.caller_toggle:
-                pygame.draw.line(self.surface_nodes,self.RED, self.to_pygame([x[0],x[1]+24], 2), self.to_pygame(w, point_height))
+            # if self.follower_toggle:
+            #     pygame.draw.line(self.surface_nodes,self.PALE_BLUE, self.to_pygame([x[0],x[1]+24], 2), self.to_pygame(z, point_height))
+            # if self.caller_toggle:
+            #     pygame.draw.line(self.surface_nodes,self.RED, self.to_pygame([x[0],x[1]+24], 2), self.to_pygame(w, point_height))
 
         for y in self.nodes:
 
@@ -196,7 +196,7 @@ class WindowManagerTypeTwo:
 
             if y.type == NodeType.End:
 
-                z = y.follower.position.as_int_array
+                z = y.parent.position.as_int_array
                 env_list = y.environment
 
                 pygame.draw.circle(self.surface_nodes, self.PALE_BLUE, self.to_pygame([x[0],x[1]+24], 0), 2)

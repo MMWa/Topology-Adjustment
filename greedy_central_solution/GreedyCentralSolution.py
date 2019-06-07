@@ -58,6 +58,7 @@ class GreedyCentralSolution(NodeNetwork):
             print(e)
             print("only one node given")
 
+        node_selector = None
         # we do this because there are two nodes already with a solution since we have a special first run
         for _ in range(len(self.node_list)-2):
             min_distance = np.inf
@@ -71,17 +72,12 @@ class GreedyCentralSolution(NodeNetwork):
                             min_distance = new_segment.distance
                             tmp_segment = new_segment
             # there is a risk of reference before assignment here, if the numbers dont play nice
-            try:
+            if node_selector is not None:
                 node_selector.has_segment = True
                 self.__segment_list.append(tmp_segment)
 
                 if tmp_segment.has_hidden:
                     self.__hidden_node_list.append(tmp_segment.point_a)
-
-            except Exception as e:
-                print(e)
-                print("All segments greater than infinity or no segments other than first segment")
-                pass
 
     def __add_relays(self, distance_multiplier):
         for i in self.__segment_list:

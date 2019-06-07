@@ -2,8 +2,6 @@ import numpy as np
 from typing import List
 import time
 from pygame.constants import *
-
-from decentralized_solution.NodeRecord import NodeRecord
 from greedy_central_solution import GreedyCentralSolution
 from fui import WindowManager, WindowManagerTypeTwo
 from simulation.node import NodeNetwork, Node, Pos
@@ -11,18 +9,12 @@ from simulation.node.Node import NodeType
 import logging
 
 
-class BackwardPursueNode(Node):
+class DecentralizedNode(Node):
     __environment: List[Node]
 
-    def __init__(self, environment, unit_distance, position=None, in_node=None):
+    def __init__(self, environment, unit_distance, position=None, in_node=None, follower=None):
         self.__a, self.__global_relay_link = environment
-
-        self.parent = None
-        self.children = []
-
-        self.perceived_environment = NodeRecord()
-
-
+        self.follower = follower
         self.unit_distance = unit_distance
         self.proof = GreedyCentralSolution(self.unit_distance)
         self.last_caller = None
@@ -86,11 +78,6 @@ class BackwardPursueNode(Node):
         points = np.sum(points, axis=0)
         return np.divide(points, len(self.environment))
 
-    def change_parent(self, new_parent):
-        self.parent.children.remove(self)
-        self.parent = new_parent
-        self.parent.children.append(self)
-
     def move_to(self, target):
         self.call_counter = 0
         self.last_caller = target
@@ -98,11 +85,31 @@ class BackwardPursueNode(Node):
             # chain tightening code
             self.move_along_line(self.angle_to(target), (self.distance_to(target) - self.unit_distance) * .2)
 
-            if len(self.environment) is 2:
-                if self.environment[0].distance_to(self.environment[1]) > 0.8 * self.unit_distance:
-                    [xs, ys] = self.environment_centroid
-                    to_go = Node(Pos(xs, ys))
-                    self.move_along_line(self.angle_to(to_go), self.distance_to(to_go) * 0.6)
+            try:
+                if len(self.environment) is 2:
+                    if self.environment[0].distance_to(self.environment[1]) > 0.8 * self.unit_distance:
+                        [xs, ys] = self.environment_centroid
+                        to_go = Node(Pos(xs, ys))
+                        self.move_along_line(self.angle_to(to_go), self.distance_to(to_go) * 0.6)
+
+            except IndexError as e:
+                log.error("--------------------------------------------------")
+                log.error("try failed - couldn't find a solution")
+                log.error(e)
+                # # force it for now
+                if self.home not in self.environment_full:
+                    try:
+                        for j in self.follower.environment_infrastructure:
+                            if self.last_caller is j:
+                                self.last_caller.follower = self
+                                self.__global_relay_link.remove(self)
+
+                        self.last_caller.follower = self
+                        self.__global_relay_link.remove(self)
+                        log.error("Problem solved")
+                    except Exception as er:
+                        log.error(er)
+                        log.error("no hope in this one")
 
         if self.type == NodeType.Home:
             if self.distance_to(target) > self.unit_distance * .8:
@@ -123,8 +130,6 @@ class BackwardPursueNode(Node):
         new_node.depth = self.depth_counter
         target.follower = new_node
         self.__global_relay_link.append(new_node)
-
-
 
     def tick(self):
         self.call_counter += 1
@@ -154,40 +159,6 @@ class BackwardPursueNode(Node):
                         if i.last_caller is j:
                             i.last_caller.follower = self
                             self.__global_relay_link.remove(i)
-
-
-class BackwardDecentralizedSolution(NodeNetwork):
-    home_node: Node
-    relay_list = List[BackwardPursueNode]
-
-    def __init__(self, unit_distance, full_list=None):
-        self.unit_distance = unit_distance
-        self.home_node = None
-
-        self.__sandbox = None
-
-        super().__init__()
-
-        if full_list is not None:
-            self.node_list = full_list
-            self.home_node = full_list[0]
-            self.home_node.type = NodeType.Home
-            new_node = BackwardPursueNode([self.node_list, self.relay_list], self.unit_distance, in_node=self.home_node)
-            new_node.type = NodeType.Home
-            self.relay_list.append(new_node)
-
-    def prepare(self):
-        for x in self.node_list[1:]:
-            x.follower = self.relay_list[0]
-
-    def execute_pipeline(self):
-        for x in self.node_list[1:] + self.relay_list:
-            x.tick()
-
-    @property
-    def sandbox(self):
-        return [self.node_list, self.relay_list]
-
 
 if __name__ == "__main__":
 

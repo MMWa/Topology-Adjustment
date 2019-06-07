@@ -1,4 +1,5 @@
 import numpy as np
+import random
 from typing import List
 import time
 from pygame.constants import *
@@ -8,7 +9,7 @@ from simulation.node import NodeNetwork, Node, Pos
 from simulation.node.Node import NodeType
 
 
-class ForwardPursueNode(Node):
+class SmartNode(Node):
     __environment: List[Node]
 
     def __init__(self, environment, unit_distance, position=None, in_node=None, pursue_target=None):
@@ -50,24 +51,27 @@ class ForwardPursueNode(Node):
     def follow(self):
         if self.type is NodeType.Relay:
             # a propegated velocity is used to move everything around
-
-            print("follow works")
             self.proof.node_list = self.environment
 
             self.move_along_line(self.angle_to(self.pursue_target),
-                                 (self.distance_to(self.pursue_target) - self.unit_distance) * .2)
+                                 (self.distance_to(self.pursue_target) - self.unit_distance))
 
             try:
-                self.proof.execute_pipeline()
-                self.move_along_line(self.angle_to(self.proof.relay_list[0]),
-                                     self.distance_to(self.proof.relay_list[0]) * .2)
-                self.proof.reset()
-            except:
+                if len(self.environment) is 2:
+                    if self.environment[0].distance_to(self.environment[1]) > 0.8 * self.unit_distance:
+                        [xs, ys] = self.environment_centroid
+                        to_go = Node(Pos(xs, ys))
+                        self.move_along_line(self.angle_to(to_go), self.distance_to(to_go))
+            except Exception as e:
+                print(e)
                 pass
+
+            self.proof.reset()
+
 
         elif self.type is NodeType.Home:
             if self.distance_to(self.pursue_target) > self.unit_distance * .8:
-                new_node = ForwardPursueNode([self.__a, self.__global_relay_link], self.unit_distance,
+                new_node = SmartNode([self.__a, self.__global_relay_link], self.unit_distance,
                                              in_node=Node(Pos(0, 0)))
 
                 new_node.type = NodeType.Relay
@@ -89,9 +93,9 @@ class ForwardPursueNode(Node):
                     print("Node removal error")
 
 
-class ForwardDecentralizedSolution(NodeNetwork):
+class GreedyTrainerSolution(NodeNetwork):
     home_node: Node
-    relay_list = List[ForwardPursueNode]
+    relay_list = List[SmartNode]
 
     def __init__(self, unit_distance, full_list=None):
         self.unit_distance = unit_distance
@@ -106,12 +110,14 @@ class ForwardDecentralizedSolution(NodeNetwork):
             self.node_list = full_list
             self.home_node = full_list[0]
             self.home_node.type = NodeType.Home
-            new_node = ForwardPursueNode([self.node_list, self.relay_list], self.unit_distance, in_node=self.home_node)
+            new_node = SmartNode([self.node_list, self.relay_list], self.unit_distance, in_node=self.home_node)
             new_node.type = NodeType.Home
             new_node.pursue_target = self.node_list[1]
             self.relay_list.append(new_node)
+        # self.greedy_list = GreedyCentralSolution(unit_distance, self.node_list)
 
     def execute_pipeline(self):
+
         for x in self.relay_list:
             x.follow()
 
@@ -122,8 +128,9 @@ class ForwardDecentralizedSolution(NodeNetwork):
 
 if __name__ == "__main__":
     node_selector = 1
-
     move_coefficient = 10
+    # mode to let nodes move randomly in space
+    random_mode = False
 
     # create a list of nodes, this is our scenario
     node_list = []
@@ -136,7 +143,7 @@ if __name__ == "__main__":
     # node_list.append(c_node)
 
     # shove the list into a scenario solver
-    dist_list = ForwardDecentralizedSolution(40, node_list)
+    dist_list = GreedyTrainerSolution(40, node_list)
     greedy_list = GreedyCentralSolution(40, node_list)
 
     game_window = WindowManager()
@@ -169,6 +176,11 @@ if __name__ == "__main__":
         greedy_list.reset()
 
         event = game_window.catch_events()
+
+
+        if random_mode is True:
+            node_list[node_selector].position.velocity_add([random.randint(-10,10), random.randint(-10,10)])
+
 
         if event == K_w:
             node_list[node_selector].position.velocity_add([0, move_coefficient])
