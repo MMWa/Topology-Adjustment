@@ -167,7 +167,7 @@ class WindowManagerTypeTwo:
             x = y.position.as_int_array
             # z = y.follower.position.as_int_array
             # w = y.last_caller.position.as_int_array
-            env_list = y.environment
+            env_list = y.children
 
             if self.environment_toggle:
                 for ii_e in env_list:
@@ -197,7 +197,7 @@ class WindowManagerTypeTwo:
             if y.type == NodeType.End:
 
                 z = y.parent.position.as_int_array
-                env_list = y.environment
+                env_list = y.children
 
                 pygame.draw.circle(self.surface_nodes, self.PALE_BLUE, self.to_pygame([x[0],x[1]+24], 0), 2)
                 pygame.draw.line(self.surface_nodes,self.PALE_BLUE, self.to_pygame([x[0],x[1]+24], 2), self.to_pygame(z, point_height))

@@ -36,3 +36,4 @@ class Pos:
     @property
     def as_int_array(self):
         return [int(self.x), int(self.y)]
+

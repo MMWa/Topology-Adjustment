@@ -3,6 +3,8 @@
   <component name="ProjectModuleManager">
     <modules>
       <module fileurl="file://$PROJECT_DIR$/.idea/Neural-Topology-Adjustment.iml" filepath="$PROJECT_DIR$/.idea/Neural-Topology-Adjustment.iml" />
+      <module fileurl="file://$PROJECT_DIR$/../findHouse/.idea/findHouse.iml" filepath="$PROJECT_DIR$/../findHouse/.idea/findHouse.iml" />
+      <module fileurl="file://$PROJECT_DIR$/../littlePlay/.idea/littlePlay.iml" filepath="$PROJECT_DIR$/../littlePlay/.idea/littlePlay.iml" />
     </modules>
   </component>
 </project>

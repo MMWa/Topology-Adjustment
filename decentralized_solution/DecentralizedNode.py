@@ -17,7 +17,7 @@ class DecentralizedNode(Node):
         self.__a, self.__global_relay_link = environment
         self.parent = parent
         self.children = []
-
+        self.endpoints = []
         # self.perceived_environment = NodeRecord()
 
         self.unit_distance = unit_distance
@@ -27,7 +27,7 @@ class DecentralizedNode(Node):
         self.proof = GreedyCentralSolution(self.unit_distance)
         self.last_caller = None
         self.depth = 0
-        self.__depth_counter = 0
+        self.__issue_counter = 0
 
         try:
             self.home = self.__global_relay_link[0]
@@ -64,9 +64,14 @@ class DecentralizedNode(Node):
         return accumulator
 
     def change_parent(self, new_parent):
-        self.parent.children.remove(self)
-        self.parent = new_parent
-        self.parent.children.append(self)
+        try:
+            self.parent.remove_child(self)
+            # self.parent.children.remove(self)
+            self.parent = new_parent
+            self.parent.add_child(self)
+            # self.parent.children.append(self)
+        except Exception as e:
+            print(e)
 
     def immediate_neighborhood(self):
         i_ne = []
@@ -76,11 +81,58 @@ class DecentralizedNode(Node):
                 i_ne.append(y)
         return i_ne
 
+    def check_link(self, node, me):
+        if node.type == NodeType.Home:
+            return True
+        elif node == me:
+            return False
+        else:
+            return node.check_link(node.parent, me)
+
+    def announce_removal(self, target):
+        if target in self.children:
+            self.children.remove(target)
+        for x in self.children:
+            x.announce_removal(target)
+
+    def announce_endpoint_add(self, target):
+        if self.type is not NodeType.Home:
+            self.parent.receive_update("endpoint_add", target)
+
+    def announce_endpoint_remove(self, target):
+        if self.type is not NodeType.Home:
+            self.parent.receive_update("endpoint_remove", target)
+
+    def receive_update(self, message_type, message):
+        if message_type == "endpoint_add":
+            self.endpoints.append(message)
+
+        if message_type == "endpoint_remove":
+            self.endpoints.remove(message)
+
+        if self.type != NodeType.Home:
+            self.parent.receive_update(message_type, message)
+
+    def add_child(self, target):
+        if target not in self.children:
+            # self.announce_endpoint_add(target)
+            self.children.append(target)
+
+        # if target.type == NodeType.End:
+            # self.announce_endpoint_add(target)
+            # self.endpoints.append(target)
+
+    def remove_child(self, target):
+        self.children.remove(target)
+        # if target.type == NodeType.End:
+        #     # self.announce_endpoint_remove(target)
+        #     self.endpoints.remove(target)
+
     def update_parent(self):
         # checks for backward reduction
+
         if not self.parent.type is NodeType.Home:
             if self.distance_to(self.parent.parent) < self.critical_range:
-                print("this just happened")
 
                 self.change_parent(self.parent.parent)
 
@@ -89,7 +141,9 @@ class DecentralizedNode(Node):
                 if x is not self.parent:
                     if self.distance_to(x) < self.distance_to(self.parent):
                         if x.type is not NodeType.End:
-                            self.change_parent(x)
+                            # prevents the the broken link situation
+                            if self.check_link(x, self):
+                                self.change_parent(x)
 
         # now we have to check for environmental reduction
         #
@@ -116,40 +170,69 @@ class DecentralizedNode(Node):
         [xs,ys] = self.move_centroid()
         tmp = Node(Pos(xs,ys))
         delta = 0.8
+        # self.position.x = xs
+        # self.position.y = ys
         self.move_along_line(self.angle_to(tmp),self.distance_to(tmp)*delta)
+        self.request_parent_proximity()
 
+    def tell_depth(self, value):
+        self.depth = value + 1
+
+    def request_parent_proximity(self):
+        if self.parent.type is not NodeType.Home:
+            self.parent.receive_proximity_request(self)
+
+    def request_reduce_density(self):
+        if self.parent.type is not NodeType.Home:
+            self.parent.receive_reduce_density()
+
+    def receive_proximity_request(self, target):
+        self.move_along_line(self.angle_to(target=target),(self.distance_to(target)- self.unit_distance)*0.8)
 
     def tick(self):
+        for x in self.children:
+            x.tell_depth(self.depth)
+
         if self.type == NodeType.Relay:
             self.update_parent()
             self.move_to()
 
-            if len(self.children) > 0:
-                dist_avg = sum(map(lambda x: self.distance_to(x), self.children))/len(self.children)
-                if dist_avg > self.critical_range:
-                    [xs, ys] = self.child_centroid()
-                    tmp = Node(Pos(xs, ys))
-                    delta = 0.1
-                    self.move_along_line(self.angle_to(tmp), self.distance_to(tmp) * delta)
+            #
+            # if len(self.children) > 0:
+            #     dist_avg = sum(map(lambda x: self.distance_to(x), self.children))/len(self.children)
+            #     if dist_avg > self.critical_range:
+            #         [xs, ys] = self.child_centroid()
+            #         tmp = Node(Pos(xs, ys))
+            #         delta = .8
+            #         self.move_along_line(self.angle_to(tmp), self.distance_to(tmp) * delta)
 
             if len(self.children)>1:
                 if self.distance_to(self.children[0]) > self.critical_range:
-                    if self.__depth_counter > 10:
-                        self.__depth_counter = 0
+                    if self.__issue_counter > 10:
+                        self.__issue_counter = 0
                         self.children[0].change_parent(self.parent)
                         #
                         # if self.parent.type is not NodeType.Home:
                         #     self.change_parent(self.parent.parent)
-                    self.__depth_counter += 1
+                    self.__issue_counter += 1
 
             if self.children == []:
-                print("no children!!!!!!!!!!!!")
+                try:
+                    self.announce_removal(self)
+                    self.__global_relay_link.remove(self)
+                except Exception as e:
+                    print(e)
+                # del self
                 return
 
         if self.type == NodeType.End:
             self.update_parent()
+            # print(self.check_link(self.parent, self))
 
         if self.type == NodeType.Home:
+            # make sure depth is zero every time
+            self.depth = 0
+
             for x in self.children:
                 # x: DecentralizedNode
 
@@ -159,6 +242,15 @@ class DecentralizedNode(Node):
                 if self.distance_to(x) < self.safe_range*0.5:
                     for y in x.children:
                         y.change_parent(self)
+                    if x.type == NodeType.Relay:
+                        try:
+                            self.announce_removal(x)
+                            self.__global_relay_link.remove(x)
+                        except Exception as e:
+                            print(e)
+                            print("Node removal error")
+                        return
+
 
                 # if self.distance_to(x) < self.critical_range*0.5:
 
@@ -189,8 +281,9 @@ class DecentralizedSolution(NodeNetwork):
     def __init__(self, unit_distance, full_list=None):
         self.unit_distance = unit_distance
         self.home_node = None
-
         self.__sandbox = None
+
+
 
         super().__init__()
 
