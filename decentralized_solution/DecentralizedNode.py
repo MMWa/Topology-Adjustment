@@ -8,6 +8,7 @@ from simulation.node import NodeNetwork, Node, Pos
 from simulation.node.Node import NodeType
 import logging
 
+
 class DecentralizedNode(Node):
     __environment: List[Node]
 
@@ -118,6 +119,7 @@ class DecentralizedNode(Node):
             if self.distance_to(self.parent.parent) < self.critical_range:
                 self.change_parent(self.parent.parent)
 
+
         for x in self.environment_all:
             if x not in self.immediate_neighborhood():
                 if x is not self.parent:
@@ -145,7 +147,7 @@ class DecentralizedNode(Node):
         [xs, ys] = self.move_centroid()
         tmp = Node(Pos(xs, ys))
         delta = 0.8
-        self.move_along_line(self.angle_to(tmp), self.distance_to(tmp) * delta)
+        self.move_along_line(self.angle_to(tmp), min([self.distance_to(tmp) * delta, 10]))
         self.request_parent_proximity()
 
         if self.parent.type is NodeType.Home:
@@ -157,7 +159,7 @@ class DecentralizedNode(Node):
             tmp_tmo = Node(Pos(xs, ys))
             d_cover = self.critical_range - self.distance_to((self.parent))
             beta = 0.2
-            self.move_along_line(self.parent.angle_to(tmp_tmo), d_cover*beta)
+            self.move_along_line(self.parent.angle_to(tmp_tmo), min([d_cover * beta, 10]))
 
     def tell_depth(self, value):
         self.depth = value + 1
@@ -171,33 +173,35 @@ class DecentralizedNode(Node):
 
     def receive_proximity_request(self, target):
         if self.type is not NodeType.Home:
-            self.move_along_line(self.angle_to(target=target), (self.distance_to(target) - self.unit_distance))
+            self.move_along_line(self.angle_to(target=target), min([(self.distance_to(target) - self.unit_distance)]))
 
     def tick(self):
         for x in self.children:
             x.tell_depth(self.depth)
 
         for idx, _ in enumerate(self.endpoints):
-            self.endpoints_freshness[idx]+=1
+            self.endpoints_freshness[idx] += 1
 
         for idx, x in enumerate(self.endpoints_freshness):
             if x > 120:
                 del self.endpoints[idx]
                 del self.endpoints_freshness[idx]
 
-
         if self.type == NodeType.Relay:
             self.update_parent()
             self.move_to()
 
             if len(self.children) > 1:
-                children_distance = list(map(lambda x : self.distance_to(x), self.children))
-                max_idx = max(children_distance)
+
+                children_distance = list(map(lambda x: self.distance_to(x), self.children))
+                max_idx = min(children_distance)
 
                 max_idx = children_distance.index(max_idx)
 
                 if self.distance_to(self.children[max_idx]) > self.critical_range:
-                    if self.__issue_counter > 100:
+                    print("it should triger")
+
+                    if self.__issue_counter > 20:
                         self.__issue_counter = 0
                         self.children[max_idx].change_parent(self.parent)
                     self.__issue_counter += 1
@@ -218,20 +222,20 @@ class DecentralizedNode(Node):
 
                 if self.distance_to(x) > self.critical_range:
                     self.spawn_to(x)
+                    return
 
-                if self.distance_to(x) < self.safe_range*0.5:
-                    for y in x.children:
-                        y.change_parent(self)
-                    if x.type == NodeType.Relay:
+                if x.type == NodeType.Relay:
+                    if x.children:
                         try:
-                            self.announce_removal(x)
-                            self.__global_relay_link.remove(x)
+                            [X_cc, Y_cc] = x.child_centroid()
+                            cc_as_node = Node(Pos(X_cc, Y_cc))
+                            if self.distance_to(cc_as_node) < self.critical_range:
+                                for y in x.children:
+                                    y.change_parent(self)
+                                    self.announce_removal(x)
+                                    self.__global_relay_link.remove(x)
                         except Exception as e:
                             print(e)
-                            print("Node removal error")
-                        return
-
-                # if self.distance_to(x) < self.critical_range*0.5:
 
     def spawn_to(self, target):
         new_node = DecentralizedNode([self.__a, self.__global_relay_link], self.unit_distance,
@@ -303,8 +307,8 @@ if __name__ == "__main__":
     dist_list = DecentralizedSolution(unit_distance, node_list)
     greedy_list = GreedyCentralSolution(unit_distance, node_list)
 
-    b_node = Node(Pos(1.7 * 10* unit_distance, 1 * 10* unit_distance))
-    c_node = Node(Pos(2 * 10* unit_distance, 0 * 10* unit_distance))
+    b_node = Node(Pos(1.7 * 10 * unit_distance, 1 * 10 * unit_distance))
+    c_node = Node(Pos(2 * 10 * unit_distance, 0 * 10 * unit_distance))
     d_node = Node(Pos(2 * 10, 0 * 10))
 
     b_node_back = DecentralizedNode(dist_list.sandbox, unit_distance, in_node=b_node)
@@ -377,44 +381,3 @@ if __name__ == "__main__":
                 node_selector = 1
 
         # node_list[1].position.velocity_add([randint(0, 2), randint(0, 2)])
-
-    # def tick(self):
-    #     if self.type == NodeType.Relay:
-    #         self.update_parent()
-    #         self.move_to()
-    #         if len(self.children)>1:
-    #             # self.proof.node_list = self.children
-    #             # self.proof.execute_pipeline()
-    #             # self.proof.reset()
-    #
-    #             # if self.children[0].distance_to(self.children[1]) > self.critical_range*2:
-    #             if self.distance_to(self.children[0]) > self.critical_range:
-    #                 print("we got it")
-    #                 if self.__depth_counter > 10:
-    #                     self.__depth_counter = 0
-    #                     self.children[0].change_parent(self.parent)
-    #
-    #                     if self.parent.type is not NodeType.Home:
-    #                         self.change_parent(self.parent.parent)
-    #                 self.__depth_counter+= 1
-    #
-    #
-    #         # if not self.children:
-    #         #     self.__global_relay_link.remove(self)
-    #         #     return
-    #
-    #     if self.type == NodeType.End:
-    #         self.update_parent()
-    #
-    #     if self.type == NodeType.Home:
-    #         for x in self.children:
-    #             # x: DecentralizedNode
-    #
-    #             if self.distance_to(x) > self.critical_range:
-    #                 self.spawn_to(x)
-    #
-    #             if self.distance_to(x) < self.safe_range*0.5:
-    #                 for y in x.children:
-    #                     y.change_parent(self)
-    #
-    #             # if self.distance_to(x) < self.critical_range*0.5:
