@@ -147,7 +147,9 @@ class DecentralizedNode(Node):
         [xs, ys] = self.move_centroid()
         tmp = Node(Pos(xs, ys))
         delta = 0.8
-        self.move_along_line(self.angle_to(tmp), min([self.distance_to(tmp) * delta, 10]))
+        # self.position.x = xs
+        # self.position.y = ys
+        self.move_along_line(self.angle_to(tmp), min([self.distance_to(tmp), 10]))
         self.request_parent_proximity()
 
         if self.parent.type is NodeType.Home:
@@ -173,7 +175,7 @@ class DecentralizedNode(Node):
 
     def receive_proximity_request(self, target):
         if self.type is not NodeType.Home:
-            self.move_along_line(self.angle_to(target=target), min([(self.distance_to(target) - self.unit_distance)]))
+            self.move_along_line(self.angle_to(target=target), min([(self.distance_to(target)-self.safe_range),10]))
 
     def tick(self):
         for x in self.children:
@@ -194,9 +196,17 @@ class DecentralizedNode(Node):
             if len(self.children) > 1:
 
                 children_distance = list(map(lambda x: self.distance_to(x), self.children))
-                max_idx = min(children_distance)
+                max_idx = max(children_distance)
 
                 max_idx = children_distance.index(max_idx)
+
+                # for x in self.children:
+                #     if self.distance_to(x) > self.critical_range:
+                #         if self.__issue_counter > 20:
+                #             self.__issue_counter = 0
+                #             self.children[max_idx].change_parent(self.parent)
+                #             self.change_parent(self.parent.parent)
+                #         self.__issue_counter += 1
 
                 if self.distance_to(self.children[max_idx]) > self.critical_range:
                     print("it should triger")
@@ -204,6 +214,7 @@ class DecentralizedNode(Node):
                     if self.__issue_counter > 20:
                         self.__issue_counter = 0
                         self.children[max_idx].change_parent(self.parent)
+                        self.change_parent(self.parent.parent)
                     self.__issue_counter += 1
 
         if self.type == NodeType.End:
@@ -236,6 +247,18 @@ class DecentralizedNode(Node):
                                     self.__global_relay_link.remove(x)
                         except Exception as e:
                             print(e)
+
+                # if self.distance_to(x) < self.safe_range * 0.5:
+                #     for y in x.children:
+                #         y.change_parent(self)
+                #     if x.type == NodeType.Relay:
+                #         try:
+                #             self.announce_removal(x)
+                #             self.__global_relay_link.remove(x)
+                #         except Exception as e:
+                #             print(e)
+                #             print("Node removal error")
+                #         return
 
     def spawn_to(self, target):
         new_node = DecentralizedNode([self.__a, self.__global_relay_link], self.unit_distance,
