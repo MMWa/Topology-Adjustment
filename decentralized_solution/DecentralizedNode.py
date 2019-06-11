@@ -200,22 +200,13 @@ class DecentralizedNode(Node):
 
                 max_idx = children_distance.index(max_idx)
 
-                # for x in self.children:
-                #     if self.distance_to(x) > self.critical_range:
-                #         if self.__issue_counter > 20:
-                #             self.__issue_counter = 0
-                #             self.children[max_idx].change_parent(self.parent)
-                #             self.change_parent(self.parent.parent)
-                #         self.__issue_counter += 1
-
-                if self.distance_to(self.children[max_idx]) > self.critical_range:
-                    print("it should triger")
-
-                    if self.__issue_counter > 20:
-                        self.__issue_counter = 0
-                        self.children[max_idx].change_parent(self.parent)
-                        self.change_parent(self.parent.parent)
-                    self.__issue_counter += 1
+                for x in self.children:
+                    if self.distance_to(x) > self.critical_range:
+                        if self.__issue_counter > 20:
+                            self.__issue_counter = 0
+                            self.children[max_idx].change_parent(self.parent)
+                            self.change_parent(self.parent.parent)
+                        self.__issue_counter += 1
 
         if self.type == NodeType.End:
             self.update_parent()
