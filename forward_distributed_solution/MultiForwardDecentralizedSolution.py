@@ -148,17 +148,17 @@ if __name__ == "__main__":
 
     test_dist = MultiForwardDecentralizedSolution(2, node_list)
 
-    # a_relay = MultiForwardPursueNode(test_dist.sandbox, 2, in_node=Node(Pos(1, 1)))
-    # a_relay.type = NodeType.Relay
+    a_relay = MultiForwardPursueNode(test_dist.sandbox, 2, in_node=Node(Pos(1, 1)))
+    a_relay.type = NodeType.Relay
 
-    # node_list.append(c_node)
+    node_list.append(c_node)
 
-    # test_dist.relay_list.append(a_relay)
-    # print(a_relay.environment)
+    test_dist.relay_list.append(a_relay)
+    print(a_relay.environment)
     print(test_dist.sandbox)
 
     test_dist.execute_pipeline()
 
-    test_dist.to_plot()
+    # test_dist.to_plot()
 
     # print(test_dist.home_node.distance_to(b_node))

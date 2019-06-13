@@ -26,7 +26,6 @@ class DecentralizedNode(Node):
         self.safe_range = self.unit_distance * 0.8
 
         self.proof = GreedyCentralSolution(self.unit_distance)
-        self.last_caller = None
         self.depth = 0
         self.__issue_counter = 0
 
@@ -81,6 +80,9 @@ class DecentralizedNode(Node):
         return i_ne
 
     def check_link(self, node, me):
+        if node == None:
+            return False
+
         if node.type == NodeType.Home:
             return True
         elif node == me:
@@ -111,23 +113,33 @@ class DecentralizedNode(Node):
 
     def remove_child(self, target):
         if target in self.children:
+            # print("child actually removed")
             self.children.remove(target)
 
     def update_parent(self):
         # checks for backward reduction
-        if not self.parent.type is NodeType.Home:
-            if self.distance_to(self.parent.parent) < self.critical_range:
-                self.change_parent(self.parent.parent)
+        # if not self.parent.type is NodeType.Home:
+        #     try:
+        #         if self.distance_to(self.parent.parent) < self.critical_range:
+        #             # print(self.distance_to(self.parent.parent))
+        #             self.change_parent(self.parent.parent)
+        #             # print("parent changed ")
+        #     except Exception as e:
+        #         print(e)
+        #         print("A node doesnt have a parent")
 
 
         for x in self.environment_all:
-            if x not in self.immediate_neighborhood():
-                if x is not self.parent:
-                    if self.distance_to(x) < self.distance_to(self.parent):
-                        if x.type is not NodeType.End:
-                            # prevents the the broken link situation
-                            if self.check_link(x, self):
-                                self.change_parent(x)
+            try:
+                if x not in self.immediate_neighborhood():
+                    if x is not self.parent:
+                        if self.distance_to(x) < self.distance_to(self.parent):
+                            if x.type is not NodeType.End:
+                                # prevents the the broken link situation
+                                if self.check_link(x, self):
+                                    self.change_parent(x)
+            except Exception as e:
+                print(e)
 
     def move_centroid(self):
         points = list(map(lambda x: x.position.as_array, self.children + [self.parent]))
@@ -144,24 +156,23 @@ class DecentralizedNode(Node):
         return points
 
     def move_to(self):
+
         [xs, ys] = self.move_centroid()
         tmp = Node(Pos(xs, ys))
         delta = 0.8
-        # self.position.x = xs
-        # self.position.y = ys
         self.move_along_line(self.angle_to(tmp), min([self.distance_to(tmp), 10]))
         self.request_parent_proximity()
 
-        if self.parent.type is NodeType.Home:
-            try:
-                [xs, ys] = self.child_centroid()
-            except Exception as e:
-                print(e)
-
-            tmp_tmo = Node(Pos(xs, ys))
-            d_cover = self.critical_range - self.distance_to((self.parent))
-            beta = 0.2
-            self.move_along_line(self.parent.angle_to(tmp_tmo), min([d_cover * beta, 10]))
+        # if self.parent.type is NodeType.Home:
+        #     try:
+        #         [xs, ys] = self.child_centroid()
+        #     except Exception as e:
+        #         print(e)
+        #
+        #     tmp_tmo = Node(Pos(xs, ys))
+        #     d_cover = self.critical_range - self.distance_to((self.parent))
+        #     beta = 0.2
+        #     self.move_along_line(self.parent.angle_to(tmp_tmo), min([d_cover * beta, 10]))
 
     def tell_depth(self, value):
         self.depth = value + 1
@@ -175,7 +186,7 @@ class DecentralizedNode(Node):
 
     def receive_proximity_request(self, target):
         if self.type is not NodeType.Home:
-            self.move_along_line(self.angle_to(target=target), min([(self.distance_to(target)-self.safe_range),10]))
+            self.move_along_line(self.angle_to(target=target), (self.distance_to(target)-self.safe_range))
 
     def tick(self):
         for x in self.children:
@@ -194,17 +205,11 @@ class DecentralizedNode(Node):
             self.move_to()
 
             if len(self.children) > 1:
-
-                children_distance = list(map(lambda x: self.distance_to(x), self.children))
-                max_idx = max(children_distance)
-
-                max_idx = children_distance.index(max_idx)
-
                 for x in self.children:
                     if self.distance_to(x) > self.critical_range:
                         if self.__issue_counter > 20:
                             self.__issue_counter = 0
-                            self.children[max_idx].change_parent(self.parent)
+                            x.change_parent(self.parent)
                             self.change_parent(self.parent.parent)
                         self.__issue_counter += 1
 
@@ -287,6 +292,7 @@ class DecentralizedSolution(NodeNetwork):
             self.home_node.type = NodeType.Home
             new_node = DecentralizedNode([self.node_list, self.relay_list], self.unit_distance, in_node=self.home_node)
             new_node.type = NodeType.Home
+            new_node.parent = new_node
             self.relay_list.append(new_node)
 
     def prepare(self):
@@ -321,16 +327,9 @@ if __name__ == "__main__":
     dist_list = DecentralizedSolution(unit_distance, node_list)
     greedy_list = GreedyCentralSolution(unit_distance, node_list)
 
-    b_node = Node(Pos(1.7 * 10 * unit_distance, 1 * 10 * unit_distance))
-    c_node = Node(Pos(2 * 10 * unit_distance, 0 * 10 * unit_distance))
     d_node = Node(Pos(2 * 10, 0 * 10))
-
-    b_node_back = DecentralizedNode(dist_list.sandbox, unit_distance, in_node=b_node)
-    c_node_back = DecentralizedNode(dist_list.sandbox, unit_distance, in_node=c_node)
     d_node_back = DecentralizedNode(dist_list.sandbox, unit_distance, in_node=d_node)
 
-    # node_list.append(b_node_back)
-    # node_list.append(c_node_back)
     node_list.append(d_node_back)
 
     dist_list.prepare()
@@ -386,7 +385,7 @@ if __name__ == "__main__":
             new_node = DecentralizedNode(dist_list.sandbox, unit_distance, in_node=Node(Pos(0, 0)))
             new_node.type = NodeType.End
             new_node.parent = dist_list.relay_list[0]
-            new_node.parent.children.append(new_node)
+            # new_node.parent.children.append(new_node)
             node_list.append(new_node)
 
         if event == K_p:
