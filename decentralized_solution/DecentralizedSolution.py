@@ -33,6 +33,13 @@ class DecentralizedSolution(NodeNetwork):
         for x in self.node_list[1:] + self.relay_list:
             x.tick()
 
+    def reset(self):
+        """
+        returns the network to an processed state
+        """
+        self.relay_list = self.relay_list[:1]
+        self.relay_list.children = None
+
     @property
     def sandbox(self):
         return [self.node_list, self.relay_list]
