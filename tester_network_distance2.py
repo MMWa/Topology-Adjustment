@@ -1,23 +1,22 @@
 import random
 from pprint import pprint
+from typing import List
 
 import numpy as np
 import matplotlib.pyplot as plt
-from matplotlib.ticker import MaxNLocator
 
 from tqdm import tqdm
 
+from backward_distributed_solution import BackwardDecentralizedSolution, BackwardPursueNode
 from pursue_central_solution.PursueCentralSolution import PursueCentralSolution
 from pursue_central_solution.PursueCentralSmarter import PursueCentralSmarterSolution
 from greedy_central_solution.GreedyCentralSolution import GreedyCentralSolution
-
-from decentralized_solution.DecentralizedNode import DecentralizedSolution
-from decentralized_solution.DecentralizedNode import DecentralizedNode
 
 from simulation.node import Node, Pos
 from simulation.node.Node import NodeType
 
 MAX_NODE_COUNT = 30
+AVERAGE_SAMPLES = 10
 UNIT_DISTANCE = 40
 VELOCITY = 5
 
@@ -44,6 +43,15 @@ def total_distance_calc(relay_points, nodes, unit_distance):
     dist_ratio += len(nodes)
     return unit_distance * dist_ratio
 
+def broken_links_counts(solutions, relays: List[Node], unit_dist):
+    link_count = 0
+    for x in  relays:
+        for y in relays:
+            if x != y:
+                if x.distance_to(y) <= unit_dist* 1.05:
+                    link_count += 1
+
+
 
 if __name__ == "__main__":
     nodes_list = []
@@ -53,46 +61,53 @@ if __name__ == "__main__":
 
     combined_simulator = []
     combined_simulator.append(PursueCentralSolution(UNIT_DISTANCE, nodes_list))
-    combined_simulator.append(PursueCentralSmarterSolution(UNIT_DISTANCE, nodes_list))
-    combined_simulator.append(GreedyCentralSolution(UNIT_DISTANCE, nodes_list))
-    combined_simulator.append(DecentralizedSolution(UNIT_DISTANCE, nodes_list))
 
-    nodes_list.append(DecentralizedNode(combined_simulator[3].sandbox, UNIT_DISTANCE, in_node=Node(Pos(10, 10))))
-    combined_simulator[3].prepare()
-    print(combined_simulator[3].relay_list)
-    average_list = [np.zeros(len(combined_simulator))]
+
+    nodes_list.append(Node(Pos(10, 10)))
+    average_list = [np.zeros(2)]
 
     for v in tqdm(range(MAX_NODE_COUNT)):
         value_list = []
-        for _ in range(50):
+        for _ in range(AVERAGE_SAMPLES):
             for x in nodes_list[1:]:
                 x.position.velocity_add([random.randint(-VELOCITY, VELOCITY), random.randint(-VELOCITY, VELOCITY)])
 
             print_list = []
             for idx, x in enumerate(combined_simulator[:4]):
-                if idx == 3:
-                    for _ in range(30):
-                        x.execute_pipeline()
-                    print_list.append(total_distance_calc(x.relay_list, nodes_list[1:], UNIT_DISTANCE))
-                else:
-                    x.execute_pipeline()
-                    print_list.append(total_distance_calc(x.relay_list, nodes_list[1:], UNIT_DISTANCE))
-                    x.reset()
+                x.execute_pipeline()
+                print_list.append(total_distance_calc(x.relay_list, nodes_list[1:], UNIT_DISTANCE))
+                print_list.append(total_distance_from_gateway(x.node_list))
+                x.reset()
+
             value_list.append(print_list)
         average_list.append(np.mean(value_list, axis=0))
-        pprint(average_list)
-        tmp_node = DecentralizedNode(combined_simulator[3].sandbox, UNIT_DISTANCE, in_node=Node(Pos(0, 0)))
-        tmp_node.type = NodeType.End
-        # print(combined_simulator[3].relay_list)
-        tmp_node.parent = combined_simulator[3].relay_list[0]
+        # pprint(average_list)
+        tmp_node = Node(Pos(0, 0))
         nodes_list.append(tmp_node)
 
-    # np.savetxt("average_list.csv", average_list, delimiter=",")
     plt.plot(average_list)
     plt.grid(True)
-    plt.legend(["Simple Pursue Algorithm", "Improved Pursue Algorithm", "Greedy Algorithm", "Decentralized Algorithm"])
+    plt.legend(["Distance Approximation", "True Distance"])
+    plt.xlabel("Number of Nodes")
 
-    plt.show()
+    base_filename = "testdata2/test_" + str(AVERAGE_SAMPLES) + "samples_" + str(MAX_NODE_COUNT) + "nodes"
 
-    combined_simulator_decentralized = []
-    pos_list = []
+    np.savetxt(base_filename + ".csv", average_list, delimiter=",")
+    plt.savefig(base_filename + ".png")
+    plt.clf()
+
+    # pprint(np.sum(average_list, axis=1))
+    dif_list = []
+    for x in average_list:
+        dif_list.append(np.divide(x[0], x[1]))
+
+    plt.plot(dif_list)
+    plt.grid(True)
+    plt.legend(["Distance Approximation", "True Distance"])
+    plt.xlabel("Number of Nodes")
+
+
+    base_filename = "testdata2/test3_" + str(AVERAGE_SAMPLES) + "samples_" + str(MAX_NODE_COUNT) + "nodes"
+    np.savetxt(base_filename + ".csv", dif_list, delimiter=",")
+    plt.savefig(base_filename + ".png")
+    plt.clf()

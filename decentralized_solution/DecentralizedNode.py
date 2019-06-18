@@ -68,8 +68,8 @@ class DecentralizedNode(Node):
             self.parent = new_parent
             self.parent.add_child(self)
         except Exception as e:
-            print("error from change parent")
-            print(e)
+            pass
+
 
     def immediate_neighborhood(self):
         i_ne = []
@@ -242,7 +242,7 @@ class DecentralizedNode(Node):
                                     self.announce_removal(x)
                                     self.__global_relay_link.remove(x)
                         except Exception as e:
-                            print(e)
+                            pass
 
                 # if self.distance_to(x) < self.safe_range * 0.5:
                 #     for y in x.children:

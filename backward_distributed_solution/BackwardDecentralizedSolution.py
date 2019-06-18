@@ -5,7 +5,7 @@ from pygame.constants import *
 
 from decentralized_solution.NodeRecord import NodeRecord
 from greedy_central_solution import GreedyCentralSolution
-from fui import WindowManager, WindowManagerTypeTwo
+from fui import WindowManager, WindowManagerTypeTwo, WindowManagerTypeThree
 from simulation.node import NodeNetwork, Node, Pos
 from simulation.node.Node import NodeType
 import logging
@@ -218,7 +218,7 @@ if __name__ == "__main__":
 
     dist_list.prepare()
 
-    game_window = WindowManagerTypeTwo()
+    game_window = WindowManagerTypeThree()
 
     while True:
         greed_comparer = True
