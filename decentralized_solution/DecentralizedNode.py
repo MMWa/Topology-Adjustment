@@ -1,29 +1,39 @@
+import random
+
 import numpy as np
 from typing import List
 import time
 from pygame.constants import *
+
+from decentralized_solution.messenger import Messenger, Message
 from greedy_central_solution import GreedyCentralSolution
 from fui import WindowManager, WindowManagerTypeTwo
 from simulation.node import NodeNetwork, Node, Pos
 from simulation.node.Node import NodeType
 import logging
 
+COMPRESSION_DECOMPRESSION_FIX = True
+
 
 class DecentralizedNode(Node):
     __environment: List[Node]
 
-    def __init__(self, environment, unit_distance, position=None, in_node=None, parent=None):
+    def __init__(self, environment, unit_distance, position=None, in_node=None, parent=None, node_name=None):
         self.__a, self.__global_relay_link = environment
         self.parent = parent
         self.children = []
         self.endpoints = []
         self.endpoints_freshness = []
         self.announcement_counter = 0
+
+        self.messenger = Messenger(node_name)
         # self.perceived_environment = NodeRecord()
 
         self.unit_distance = unit_distance
         self.critical_range = self.unit_distance
         self.safe_range = self.unit_distance * 0.8
+        self.max_velocity = 10
+        self.max_random_velocity = self.unit_distance / 50
 
         self.proof = GreedyCentralSolution(self.unit_distance)
         self.depth = 0
@@ -42,6 +52,7 @@ class DecentralizedNode(Node):
             super().__init__(position)
         else:
             super().__init__()
+        self.node_name = self.ID
 
     @property
     def environment(self):
@@ -68,8 +79,7 @@ class DecentralizedNode(Node):
             self.parent = new_parent
             self.parent.add_child(self)
         except Exception as e:
-            pass
-
+            print("it happens")
 
     def immediate_neighborhood(self):
         i_ne = []
@@ -79,27 +89,32 @@ class DecentralizedNode(Node):
                 i_ne.append(y)
         return i_ne
 
-    def check_link(self, node, me):
-        if node == None:
+    @staticmethod
+    def check_link(node, me):
+        if node is None:
             return False
 
         if node.type == NodeType.Home:
             return True
+
         elif node == me:
             return False
+
         else:
             return node.check_link(node.parent, me)
 
     def announce_removal(self, target):
         if target in self.children:
             self.children.remove(target)
-        for x in self.children:
-            x.announce_removal(target)
+
+        for child in self.children:
+            child.announce_removal(target)
 
     def announce_endpoint_exist(self, target):
         if target not in self.endpoints:
             self.endpoints.append(target)
             self.endpoints_freshness.append(0)
+
         else:
             idx = self.endpoints.index(target)
             self.endpoints_freshness[idx] = 0
@@ -113,10 +128,10 @@ class DecentralizedNode(Node):
 
     def remove_child(self, target):
         if target in self.children:
-            # print("child actually removed")
             self.children.remove(target)
 
     def update_parent(self):
+        # turns out backward switching can be removed all together
         # checks for backward reduction
         # if not self.parent.type is NodeType.Home:
         #     try:
@@ -127,7 +142,6 @@ class DecentralizedNode(Node):
         #     except Exception as e:
         #         print(e)
         #         print("A node doesnt have a parent")
-
 
         for x in self.environment_all:
             try:
@@ -149,30 +163,36 @@ class DecentralizedNode(Node):
         return points
 
     def child_centroid(self):
-        points = list(map(lambda x: x.position.as_array, self.children))
+        filtered_children = filter(lambda x: x.type is not NodeType.End, self.children)
+        points = list(map(lambda x: x.position.as_array, filtered_children))
         p_len = len(points)
         points = np.sum(points, axis=0)
         points = np.divide(points, p_len)
         return points
 
-    def move_to(self):
+    def flood_message(self):
+        if self.type == NodeType.Home:
+            # make sure depth is zero every time
+            self.depth = 0
+            self.messenger.node_name = "gateway"
 
+            for child in self.children:
+                # child: DecentralizedNode
+                child.messenger.receive(Message("hello", "gateway", "endnode"))
+
+    def move_to(self):
         [xs, ys] = self.move_centroid()
         tmp = Node(Pos(xs, ys))
-        delta = 0.8
-        self.move_along_line(self.angle_to(tmp), min([self.distance_to(tmp), 10]))
-        self.request_parent_proximity()
+        self.move_along_line(self.angle_to(tmp), min([self.distance_to(tmp), self.max_velocity]))
 
-        # if self.parent.type is NodeType.Home:
-        #     try:
-        #         [xs, ys] = self.child_centroid()
-        #     except Exception as e:
-        #         print(e)
-        #
-        #     tmp_tmo = Node(Pos(xs, ys))
-        #     d_cover = self.critical_range - self.distance_to((self.parent))
-        #     beta = 0.2
-        #     self.move_along_line(self.parent.angle_to(tmp_tmo), min([d_cover * beta, 10]))
+        if COMPRESSION_DECOMPRESSION_FIX:
+            try:
+                [xs, ys] = self.child_centroid()
+                tmp = Node(Pos(xs, ys))
+                self.move_along_line(self.angle_to(tmp),
+                                     min([self.distance_to(tmp) - self.critical_range, self.max_velocity]))
+            except:
+                pass
 
     def tell_depth(self, value):
         self.depth = value + 1
@@ -186,9 +206,22 @@ class DecentralizedNode(Node):
 
     def receive_proximity_request(self, target):
         if self.type is not NodeType.Home:
-            self.move_along_line(self.angle_to(target=target), (self.distance_to(target)-self.safe_range))
+            self.move_along_line(self.angle_to(target=target), (self.distance_to(target) - self.critical_range))
 
     def tick(self):
+        # this is a garbage cleaning step
+        for child in self.children:
+            # internally make sure there is no reference to a non existent node
+            if child not in self.__a[1:] + self.__global_relay_link:
+                self.children.remove(child)
+                break
+
+        self.messenger.process()
+        for x in self.messenger.out_queue:
+            for y in self.children:
+                y.messenger.receive(x)
+            self.messenger.out_queue.remove(x)
+
         for x in self.children:
             x.tell_depth(self.depth)
 
@@ -201,19 +234,31 @@ class DecentralizedNode(Node):
                 del self.endpoints_freshness[idx]
 
         if self.type == NodeType.Relay:
+            # call the procedures that make decentralized nodes
             self.update_parent()
             self.move_to()
+            if not COMPRESSION_DECOMPRESSION_FIX:
+                self.request_parent_proximity()
 
+            if not COMPRESSION_DECOMPRESSION_FIX:
+                # the random noise added to all relays so they avoid local minima solutions
+                self.position.velocity_add([(random.random() * self.max_random_velocity) - (self.max_random_velocity / 2),
+                                            (random.random() * self.max_random_velocity) - (self.max_random_velocity / 2)])
+
+            # check if we have multiple children follow only one if two are going in separate directions
             if len(self.children) > 1:
-                for x in self.children:
-                    if self.distance_to(x) > self.critical_range:
+                for child in self.children:
+                    if self.distance_to(child) > self.critical_range:
+                        # make it only preform this every 20 ticks for stable switching
                         if self.__issue_counter > 20:
                             self.__issue_counter = 0
-                            x.change_parent(self.parent)
+                            child.change_parent(self.parent)
                             self.change_parent(self.parent.parent)
+                            return
                         self.__issue_counter += 1
 
         if self.type == NodeType.End:
+            # the broadcast mechanism to indicate endnode branch
             self.update_parent()
             if self.announcement_counter >= 100:
                 self.announcement_counter = 0
@@ -221,27 +266,26 @@ class DecentralizedNode(Node):
             self.announcement_counter += 1
 
         if self.type == NodeType.Home:
-            # make sure depth is zero every time
-            self.depth = 0
-
+            # spawn a relay step
             for x in self.children:
-                # x: DecentralizedNode
-
                 if self.distance_to(x) > self.critical_range:
                     self.spawn_to(x)
                     return
 
+                # Code to preform the despawn step
+                # we measure the distance to parent then despawn if parent is in proximity
                 if x.type == NodeType.Relay:
                     if x.children:
                         try:
-                            [X_cc, Y_cc] = x.child_centroid()
-                            cc_as_node = Node(Pos(X_cc, Y_cc))
+                            [x_cc, y_cc] = x.child_centroid()
+                            cc_as_node = Node(Pos(x_cc, y_cc))
                             if self.distance_to(cc_as_node) < self.critical_range:
                                 for y in x.children:
                                     y.change_parent(self)
                                     self.announce_removal(x)
                                     self.__global_relay_link.remove(x)
                         except Exception as e:
+                            # this is reached if there is an issue with removing a node from __global_relay_link
                             pass
 
                 # if self.distance_to(x) < self.safe_range * 0.5:
@@ -297,6 +341,7 @@ class DecentralizedSolution(NodeNetwork):
 
     def prepare(self):
         for x in self.node_list[1:]:
+            x.messenger.node_name = "endnode"
             self.relay_list[0].children.append(x)
             x.parent = self.relay_list[0]
 
@@ -340,7 +385,7 @@ if __name__ == "__main__":
     node_list.append(d_node_back)
 
     dist_list.prepare()
-
+    terminal_mode = False
     game_window = WindowManagerTypeTwo()
 
     while True:
@@ -356,10 +401,10 @@ if __name__ == "__main__":
         game_window.nodes = node_list
 
         game_window.greedy_relays = []
-        game_window.greedy_relays = dist_list.relay_list[1:]
+        game_window.greedy_relays = dist_list.relay_list
         if greed_comparer:
-            for x in greedy_list.relay_list:
-                game_window.pursue_relays.append(x.position.as_int_array)
+            for x__ in greedy_list.relay_list:
+                game_window.pursue_relays.append(x__.position.as_int_array)
 
         game_window.selection = node_list[node_selector].position.as_int_array
 
@@ -368,36 +413,39 @@ if __name__ == "__main__":
         if greed_comparer:
             greedy_list.reset()
 
-        event = game_window.catch_events()
+        if not terminal_mode:
+            event = game_window.catch_events()
 
-        if event == K_w:
-            node_list[node_selector].position.velocity_add([0, move_coefficient])
-        if event == K_s:
-            node_list[node_selector].position.velocity_add([0, -move_coefficient])
-        if event == K_a:
-            node_list[node_selector].position.velocity_add([-move_coefficient, 0])
-        if event == K_d:
-            node_list[node_selector].position.velocity_add([move_coefficient, 0])
-        if event == 92:
-            log.error("Attempt to trigger Debugger")
+            if event == K_w:
+                node_list[node_selector].position.velocity_add([0, move_coefficient])
+            if event == K_s:
+                node_list[node_selector].position.velocity_add([0, -move_coefficient])
+            if event == K_a:
+                node_list[node_selector].position.velocity_add([-move_coefficient, 0])
+            if event == K_d:
+                node_list[node_selector].position.velocity_add([move_coefficient, 0])
+            if event == 92:
+                log.error("Attempt to trigger Debugger")
 
-        if event == K_b:
-            game_window.environment_toggle = not game_window.environment_toggle
-        if event == K_n:
-            game_window.follower_toggle = not game_window.follower_toggle
-        if event == K_m:
-            game_window.caller_toggle = not game_window.caller_toggle
+            if event == K_b:
+                game_window.environment_toggle = not game_window.environment_toggle
+            if event == K_t:
+                dist_list.relay_list[0].flood_message()
 
-        if event == K_o:
-            new_node = DecentralizedNode(dist_list.sandbox, unit_distance, in_node=Node(Pos(0, 0)))
-            new_node.type = NodeType.End
-            new_node.parent = dist_list.relay_list[0]
-            # new_node.parent.children.append(new_node)
-            node_list.append(new_node)
+            if event == K_o:
+                new_node = DecentralizedNode(dist_list.sandbox, unit_distance, in_node=Node(Pos(0, 0)))
+                new_node.type = NodeType.End
+                new_node.messenger.node_name = "endnode"
+                new_node.parent = dist_list.relay_list[0]
+                # new_node.parent.children.append(new_node)
+                node_list.append(new_node)
 
-        if event == K_p:
-            node_selector += 1
-            if node_selector == len(node_list):
-                node_selector = 1
+            if event == K_p:
+                node_selector += 1
+                if node_selector == len(node_list):
+                    node_selector = 1
+        else:
+            game_window.event_pump()
+            terminal_mode = not terminal_mode
 
         # node_list[1].position.velocity_add([randint(0, 2), randint(0, 2)])

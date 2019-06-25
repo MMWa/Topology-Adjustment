@@ -1,4 +1,8 @@
+from typing import Tuple
+
 import pygame
+from pygame import gfxdraw
+from pygame import *
 
 from simulation.node.Node import NodeType
 
@@ -71,7 +75,6 @@ class WindowManager:
         for x in self.greedy_relays:
             pygame.draw.circle(self.surface_nodes, self.BLUE, self.to_pygame(x, point_height), point_radius)
 
-
         for x in self.nodes:
             if x == self.selection:
                 pygame.draw.circle(self.surface_nodes, self.BLACK, self.to_pygame(x, point_height), point_radius)
@@ -97,13 +100,30 @@ class WindowManager:
     def quit(self):
         pygame.quit()
 
+
 class WindowManagerTypeTwo:
-    BLACK = (0, 0, 0)
-    WHITE = (255, 255, 255)
-    BLUE = (0, 0, 255)
-    GREEN = (0, 255, 0)
-    RED = (255, 0, 0)
-    PALE_BLUE = (0, 204,204)
+    GREEN: Tuple[int, int, int] = (0, 255, 0)
+    BLACK: Tuple[int, int, int] = (0, 0, 0)
+    WHITE: Tuple[int, int, int] = (255, 255, 255)
+    BLUE: Tuple[int, int, int] = (0, 0, 255)
+    RED: Tuple[int, int, int] = (255, 0, 0)
+    PALE_BLUE: Tuple[int, int, int] = (0, 204, 204)
+
+    GREEDY_RELAY_COLOR = GREEN
+    NODE_COLOR = RED
+    ALGO_RELAY_COLOR = BLUE
+
+    SElECTED_NODE = BLACK
+    BACKGROUND = WHITE
+    LINK = PALE_BLUE
+
+    # BLACK = (0, 0, 0)
+    # WHITE = (255, 255, 255)
+    # BLUE = pygame.Color("#5a05d4")
+    # GREEDY_RELAY_COLOR = (149, 152, 159)
+    # NODE_COLOR = (149, 152, 159)
+    # RED = (255, 0, 0)
+    # PALE_BLUE = (0, 204, 204)
 
     size = [1200, 800]
 
@@ -132,6 +152,18 @@ class WindowManagerTypeTwo:
 
         self.window_offset = 200
 
+    def event_pump(self):
+        key_seq = []
+        done = False
+        while not done:
+
+            pygame.event.pump()
+            keys = pygame.key.get_pressed()
+            print(keys)
+            if keys[K_RETURN]:
+                done = True
+                return
+
     def catch_events(self):
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
@@ -153,15 +185,17 @@ class WindowManagerTypeTwo:
 
     def __draw(self, algorithm_delta):
         # Clear the screen and set the screen background
-        self.surface_background.fill(self.WHITE)
+        self.surface_background.fill(self.BACKGROUND)
         self.surface_overlay.fill((0, 0, 0, 0))
         self.surface_nodes.fill((255, 255, 255, 0))
 
         point_radius = 8
         point_height = point_radius * 2
 
+        # pursue_relays and greedy_relays should be switched everything will make sense then.
         for x in self.pursue_relays:
-            pygame.draw.circle(self.surface_nodes, self.GREEN, self.to_pygame(x, point_height), point_radius)
+            pygame.draw.circle(self.surface_nodes, self.GREEDY_RELAY_COLOR, self.to_pygame(x, point_height),
+                               int(point_radius / 2))
 
         for y in self.greedy_relays:
             x = y.position.as_int_array
@@ -171,14 +205,14 @@ class WindowManagerTypeTwo:
 
             if self.environment_toggle:
                 for ii_e in env_list:
-                    pygame.draw.line(self.surface_nodes, (255,153,51), self.to_pygame(x, point_height),self.to_pygame(ii_e.position.as_int_array, point_height),5)
+                    pygame.draw.line(self.surface_overlay, self.LINK, self.to_pygame(x, point_height),
+                                     self.to_pygame(ii_e.position.as_int_array, point_height), 2)
 
-
-            pygame.draw.circle(self.surface_nodes, self.BLUE, self.to_pygame(x, point_height), point_radius)
+            pygame.draw.circle(self.surface_nodes, self.ALGO_RELAY_COLOR, self.to_pygame(x, point_height), point_radius)
             pygame.draw.circle(self.surface_overlay, (0, 0, 0, 20), self.to_pygame(x, 20), 40, 1)
-
-            if self.follower_toggle or self.caller_toggle:
-                pygame.draw.circle(self.surface_nodes, self.PALE_BLUE, self.to_pygame([x[0],x[1]+24], 0), 2)
+            #
+            # if self.follower_toggle or self.caller_toggle:
+            #     pygame.draw.circle(self.surface_nodes, self.PALE_BLUE, self.to_pygame([x[0],x[1]+24], 0), 2)
 
             # if self.follower_toggle:
             #     pygame.draw.line(self.surface_nodes,self.PALE_BLUE, self.to_pygame([x[0],x[1]+24], 2), self.to_pygame(z, point_height))
@@ -190,19 +224,21 @@ class WindowManagerTypeTwo:
             x = y.position.as_int_array
 
             if x == self.selection:
-                pygame.draw.circle(self.surface_nodes, self.BLACK, self.to_pygame(x, point_height), point_radius)
+                pygame.draw.circle(self.surface_nodes, self.SElECTED_NODE, self.to_pygame(x, point_height),
+                                   point_radius)
             else:
-                pygame.draw.circle(self.surface_nodes, self.RED, self.to_pygame(x, point_height), point_radius)\
-
+                pygame.draw.circle(self.surface_nodes, self.NODE_COLOR, self.to_pygame(x, point_height), point_radius)
             if y.type == NodeType.End:
 
                 z = y.parent.position.as_int_array
                 env_list = y.children
 
-                pygame.draw.circle(self.surface_nodes, self.PALE_BLUE, self.to_pygame([x[0],x[1]+24], 0), 2)
-                pygame.draw.line(self.surface_nodes,self.PALE_BLUE, self.to_pygame([x[0],x[1]+24], 2), self.to_pygame(z, point_height))
+                pygame.draw.circle(self.surface_nodes, self.PALE_BLUE, self.to_pygame([x[0], x[1] + 24], 0), 2)
+                pygame.draw.line(self.surface_overlay, self.PALE_BLUE, self.to_pygame([x[0], x[1] + 24], 2),
+                                 self.to_pygame(z, point_height))
                 for ii_e in env_list:
-                    pygame.draw.line(self.surface_nodes, (255,153,51), self.to_pygame(x, point_height),self.to_pygame(ii_e.position.as_int_array, point_height))
+                    pygame.draw.line(self.surface_nodes, (255, 153, 51), self.to_pygame(x, point_height),
+                                     self.to_pygame(ii_e.position.as_int_array, point_height))
 
         textsurface1 = self.myfont.render("relay count: " + str(len(self.greedy_relays)), False, (0, 0, 0))
         textsurface2 = self.myfont.render("relay count: " + str(len(self.pursue_relays)), False, (0, 0, 0))
@@ -222,6 +258,7 @@ class WindowManagerTypeTwo:
 
     def quit(self):
         pygame.quit()
+
 
 class WindowManagerTypeThree:
     BLACK = (0, 0, 0)
@@ -229,7 +266,7 @@ class WindowManagerTypeThree:
     BLUE = (0, 0, 255)
     GREEN = (0, 255, 0)
     RED = (255, 0, 0)
-    PALE_BLUE = (0, 204,204)
+    PALE_BLUE = (0, 204, 204)
 
     size = [1200, 800]
 
@@ -297,14 +334,14 @@ class WindowManagerTypeThree:
 
             if self.environment_toggle:
                 for ii_e in env_list:
-                    pygame.draw.line(self.surface_nodes, (255,153,51), self.to_pygame(x, point_height),self.to_pygame(ii_e.position.as_int_array, point_height),5)
-
+                    pygame.draw.line(self.surface_nodes, (255, 153, 51), self.to_pygame(x, point_height),
+                                     self.to_pygame(ii_e.position.as_int_array, point_height), 5)
 
             pygame.draw.circle(self.surface_nodes, self.BLUE, self.to_pygame(x, point_height), point_radius)
             pygame.draw.circle(self.surface_overlay, (0, 0, 0, 20), self.to_pygame(x, 20), 40, 1)
 
             if self.follower_toggle or self.caller_toggle:
-                pygame.draw.circle(self.surface_nodes, self.PALE_BLUE, self.to_pygame([x[0],x[1]+24], 0), 2)
+                pygame.draw.circle(self.surface_nodes, self.PALE_BLUE, self.to_pygame([x[0], x[1] + 24], 0), 2)
 
             # if self.follower_toggle:
             #     pygame.draw.line(self.surface_nodes,self.PALE_BLUE, self.to_pygame([x[0],x[1]+24], 2), self.to_pygame(z, point_height))
@@ -318,17 +355,18 @@ class WindowManagerTypeThree:
             if x == self.selection:
                 pygame.draw.circle(self.surface_nodes, self.BLACK, self.to_pygame(x, point_height), point_radius)
             else:
-                pygame.draw.circle(self.surface_nodes, self.RED, self.to_pygame(x, point_height), point_radius)\
-
+                pygame.draw.circle(self.surface_nodes, self.RED, self.to_pygame(x, point_height), point_radius)
             if y.type == NodeType.End:
 
                 z = y.follower.position.as_int_array
                 env_list = y.children
 
-                pygame.draw.circle(self.surface_nodes, self.PALE_BLUE, self.to_pygame([x[0],x[1]+24], 0), 2)
-                pygame.draw.line(self.surface_nodes,self.PALE_BLUE, self.to_pygame([x[0],x[1]+24], 2), self.to_pygame(z, point_height))
+                pygame.draw.circle(self.surface_nodes, self.PALE_BLUE, self.to_pygame([x[0], x[1] + 24], 0), 2)
+                pygame.draw.line(self.surface_nodes, self.PALE_BLUE, self.to_pygame([x[0], x[1] + 24], 2),
+                                 self.to_pygame(z, point_height))
                 for ii_e in env_list:
-                    pygame.draw.line(self.surface_nodes, (255,153,51), self.to_pygame(x, point_height),self.to_pygame(ii_e.position.as_int_array, point_height))
+                    pygame.draw.line(self.surface_nodes, (255, 153, 51), self.to_pygame(x, point_height),
+                                     self.to_pygame(ii_e.position.as_int_array, point_height))
 
         textsurface1 = self.myfont.render("relay count: " + str(len(self.greedy_relays)), False, (0, 0, 0))
         textsurface2 = self.myfont.render("relay count: " + str(len(self.pursue_relays)), False, (0, 0, 0))
@@ -348,7 +386,6 @@ class WindowManagerTypeThree:
 
     def quit(self):
         pygame.quit()
-
 
 
 if __name__ == "__main__":
